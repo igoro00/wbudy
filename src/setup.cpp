@@ -43,24 +43,20 @@ void setup() {
   pinMode(YELLOW_BTN, INPUT_PULLUP);
   pinMode(RED_BTN, INPUT_PULLUP);
   pinMode(GAME_RST_BTN, INPUT_PULLUP);
-  lcd->setCursor(0, 0); 
-  lcd->print(demoText);
-  lcd->setCursor(0, 1);
-  lcd->print("Jebac disa skurwysyna");
 }
 void loop() {
   if (ctx.gameState == GameState::LOBBY) {
     tLobby(ctx);
-  } 
-  // else if (ctx.gameState == GameState::GAME) {
-  //   tGame(ctx);
-  // } else if (ctx.gameState == GameState::END) {
-  //   tEnd(ctx);
-  // }
-  digitalWrite(LED_R, HIGH);
-  delay(1000);
-  digitalWrite(LED_R, LOW);
-  delay(1000);
+  } else if (ctx.gameState == GameState::GAME) {
+    tGame(ctx);
+  } else {
+    u_int32_t color = HSL2RGB((millis()/4)%256, 0xff, 0x7f);
+    byte r = color>>16;
+    byte g = color>>8;
+    byte b = color>>0;
+  
+    setLED(r, g, b);
+  }
 }
 
 void setLEDByUID(u_int32_t uid){

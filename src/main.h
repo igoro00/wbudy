@@ -27,5 +27,6 @@ struct Context {
 
 uint32_t tRfidRead(Context &ctx);
 void tLobby(Context &ctx);
+void tGame(Context &ctx);
 void setLED(byte r, byte g, byte b);
 void setLEDByUID(u_int32_t uid);
