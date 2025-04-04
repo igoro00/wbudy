@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "*.ejs": "html",
-        "future": "cpp"
+        "future": "cpp",
+        "cstdint": "cpp"
     }
 }
