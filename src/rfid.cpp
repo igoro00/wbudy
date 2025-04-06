@@ -2,7 +2,7 @@
 
 // Task który czyta UID z karty
 // Jak znajdzie to zapisuje do ctx.cardUID oraz kończy się
-uint32_t tRfidRead(Context &ctx) {
+uint32_t tRfidRead() {
 	uint32_t uid = 0;
 	bool result = ctx.rfid->PICC_IsNewCardPresent();
 	if (!result) {

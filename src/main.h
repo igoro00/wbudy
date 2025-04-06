@@ -1,36 +1,43 @@
 #pragma once
-#pragma GCC optimize (0)
 
-#include "Arduino.h"
+#include <cstdint>
+#include <string>
+#include <vector>
+#include <format>
+#include <memory>
+
+#include <Arduino.h>
 #include <FatFS.h>
 #include <FatFSUSB.h>
 #include <LiquidCrystal_I2C.h>
 #include <MFRC522.h>
+#include <NonBlockingRtttl.h>
 #include <SPI.h>
 #include <VFS.h>
 #include <WiFi.h>
-#include <cstdint>
-#include <string>
 
 #include "pindefs.h"
+#include "playerData.h"
+#include "sound.h"
+#include "chars.h"
 
 enum GameState { LOBBY, GAME, END };
 
 struct Context {
 	GameState gameState;
 	uint32_t cardUID;
-	uint32_t players[2];
+	std::unique_ptr<Game> game;
 	LiquidCrystal_I2C *lcd;
 	MFRC522 *rfid;
 };
 
 extern Context ctx;
 
-uint32_t tRfidRead(Context &ctx);
-void tLobby(Context &ctx);
-void tGame(Context &ctx);
+uint32_t tRfidRead();
+void tLobby();
+void tGame();
 void setLED(byte r, byte g, byte b);
-void setLEDByUID(u_int32_t uid);
+void setLEDByUID(uint32_t uid);
 void initFS();
 void myPanic();
 void bookkeeping();

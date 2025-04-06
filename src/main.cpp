@@ -2,17 +2,14 @@
 
 #include "chars.h"
 #include "colors.h"
-#include "pitches.h"
 #include "playerData.h"
-#include <NonBlockingRtttl.h>
 
 Context ctx;
 
 void setup() {
 	ctx.gameState = GameState::END;
 	ctx.cardUID = 0;
-	ctx.players[0] = 0;
-	ctx.players[1] = 0;
+	ctx.game = nullptr;
 	LiquidCrystal_I2C *lcd = new LiquidCrystal_I2C(0x27, 16, 2);
 	ctx.lcd = lcd;
 	MFRC522 *rfid = new MFRC522(RFID_CS, RFID_RST);
@@ -40,59 +37,43 @@ void setup() {
 	analogWrite(LED_R, 255);
 	analogWrite(LED_G, 255);
 	analogWrite(LED_B, 255);
-	digitalWrite(SPEAKER, 0);
 
 	pinMode(YELLOW_BTN, INPUT_PULLUP);
 	pinMode(RED_BTN, INPUT_PULLUP);
 	pinMode(GAME_RST_BTN, INPUT_PULLUP);
 	pinMode(SPEAKER, OUTPUT);
-	digitalWrite(SPEAKER, 0);
+
 	initFS();
 	initWebserver();
 
-	tone(SPEAKER, NOTE_A4, 100);
-	delay(100);
-	tone(SPEAKER, NOTE_B4, 100);
-	delay(100);
+	PlaySound(SoundEffect::SETUP_DONE);
+	waitForSoundEffect();
+	delay(1000);
 }
+
+
 void loop() {
 	if (ctx.gameState == GameState::LOBBY) {
-		tLobby(ctx);
+		tLobby();
 	} else if (ctx.gameState == GameState::GAME) {
-		tGame(ctx);
+		tGame();
 	} else {
 		bookkeeping();
 		if (rtttl::done()) {
-			rp2040.fifo.push((uint32_t)SoundEffectBuffer(SoundEffect::MAIN_THEME));
+			PlaySound(SoundEffect::MAIN_THEME);
 		}
-
 		u_int32_t color = HSL2RGB((millis() / 4) % 256, 0xff, 0x7f);
 		byte r = color >> 16;
 		byte g = color >> 8;
 		byte b = color >> 0;
 
 		setLED(r, g, b);
-	}
-}
-
-// second core only for sound
-void setup1() {
-	pinMode(SPEAKER, OUTPUT);
-	pinMode(LED_BUILTIN, OUTPUT);
-	digitalWrite(SPEAKER, 0);
-}
-void loop1() {
-	if (rp2040.fifo.available()) {
-
-		// pop returns uint32_t
-		// but since were using 32bit cpu
-		// we can cast it to pointer
-		const char *soundEffect = (const char *)rp2040.fifo.pop();
-		// the c string should contain the RTTTL song
-		// it will overwrite the currently playing song
-		rtttl::begin(SPEAKER, soundEffect);
-	}
-	if (rtttl::isPlaying()) {
-		rtttl::play(); // next tick
+		ctx.lcd->setCursor(0, 0);
+		ctx.lcd->print("Game Over");
+		if (!digitalRead(GAME_RST_BTN)){
+			PlaySound(SoundEffect::OK);
+			waitForSoundEffect();
+			ctx.gameState = GameState::LOBBY;
+		}
 	}
 }

@@ -1,6 +1,24 @@
 #include "main.h"
 
-void tGame(Context &ctx) {
+// uint32_t pButtons[2] = {0, 0};
+
+// void playerButtonISR(uint pin, uint32_t events) {
+// 	if (events & GPIO_IRQ_EDGE_RISE) {
+// 		return;
+// 	}
+// 	if (pin == YELLOW_BTN) {
+// 		pButtons[0] = micros();
+// 	} else if (pin == RED_BTN) {
+// 		pButtons[1] = micros();
+// 	}
+// 	rp2040.fifo.push(SoundEffectBuffer(SoundEffect::OK));
+// }
+
+void tGame() {
+	if(ctx.game == nullptr) {
+		Serial.println("GAME IS NULL");
+		ctx.gameState = GameState::END;
+	}
 	LiquidCrystal_I2C *lcd = ctx.lcd;
 	lcd->clear();
 	lcd->setCursor(0, 0);
@@ -19,8 +37,19 @@ void tGame(Context &ctx) {
 
 	for (int i = 0; i < 5; i++) {
 		long player = random(2);
-		delay(random(500, 5000));
-		setLEDByUID(ctx.players[player]);
+		PlaySound(SoundEffect::STOP);
+		PlaySound(SoundEffect::GAME_WAITING);
+		PlaySound(SoundEffect::LOOP_LAST);
+		lcd->clear();
+		lcd->setCursor(0, 0);
+		lcd->print("Wait for light..");
+		delay(random(5000, 50000));
+		PlaySound(SoundEffect::STOP);
+		PlaySound(SoundEffect::PRESS);
+		lcd->clear();
+		lcd->setCursor(0, 0);
+		lcd->print("Press the button");
+		setLEDByUID(ctx.game->getPlayer(player));
 		uint32_t ledStarted = millis();
 		bool clicked = false;
 		while (millis() - ledStarted < 5000) {
@@ -40,6 +69,7 @@ void tGame(Context &ctx) {
 				break;
 			}
 			if ((player == 0 && p1Btn) || (player == 1 && p2Btn)) {
+				PlaySound(SoundEffect::WIN);
 				lcd->clear();
 				lcd->setCursor(0, 0);
 				lcd->print("Player ");

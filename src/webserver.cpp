@@ -18,6 +18,8 @@ void initWebserver() {
 	WiFi.beginAP("Kurwa");
 	app.get("/", &index);
 	server.begin();
+	server.end();
+	WiFi.end();
 }
 
 void handleClient() {
