@@ -1,4 +1,8 @@
-#include "sound.h"
+#include "Arduino.h"
+#include "NonBlockingRtttl.h"
+
+#include "sound.hpp"
+
 
 const char *SOUND_EFFECTS[] = {
 	// special values interpreted in core1 loop

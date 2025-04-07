@@ -1,4 +1,9 @@
-#include "main.h"
+#include <cstdint>
+
+#include "Arduino.h"
+
+#include "pindefs.hpp"
+#include "colors.hpp"
 
 // Custom clamp function to replace std::clamp
 template <typename T> T clamp(T value, T min, T max) {

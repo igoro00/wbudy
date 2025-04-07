@@ -1,4 +1,12 @@
-#include "main.h"
+#include "LiquidCrystal_I2C.h"
+
+#include "main.hpp"
+#include "chars.hpp"
+#include "sysutils.hpp"
+#include "pindefs.hpp"
+#include "sound.hpp"
+#include "colors.hpp"
+
 
 // settingPlayer:
 // 0 - no one

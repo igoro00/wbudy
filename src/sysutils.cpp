@@ -1,4 +1,7 @@
-#include "main.h"
+#include "Arduino.h"
+
+#include "webserver.hpp"
+
 void myPanic() {
 	// disable_interrupts();
 	pinMode(LED_BUILTIN, OUTPUT);

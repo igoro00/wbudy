@@ -1,8 +1,15 @@
-#include "main.h"
+#include "NonBlockingRtttl.h"
 
-#include "chars.h"
-#include "colors.h"
-#include "playerData.h"
+#include "chars.hpp"
+#include "colors.hpp"
+#include "Game.hpp"
+#include "pindefs.hpp"
+#include "filesystem.hpp"
+#include "sound.hpp"
+#include "sysutils.hpp"
+#include "webserver.hpp"
+#include "main.hpp"
+
 
 Context ctx;
 

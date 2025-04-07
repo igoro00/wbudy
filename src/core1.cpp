@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <NonBlockingRtttl.h>
-#include "pindefs.h"
+#include "pindefs.hpp"
 // second core only for sound
 const char *lastSound = nullptr;
 bool repeatSound = false;

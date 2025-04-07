@@ -1,4 +1,8 @@
-#include "main.h"
+#include "FatFS.h"
+#include "FatFSUSB.h"
+
+#include "main.hpp"
+#include "sysutils.hpp"
 
 volatile bool updated = false;
 volatile bool driveConnected = false;
@@ -39,5 +43,10 @@ void initFS() {
 	FatFSUSB.driveReady(mountable);
 	// Start FatFS USB drive mode
 	FatFSUSB.begin();
-	VFS.root(FatFS);
+	if(!FatFS.exists("/games")) {
+		FatFS.mkdir("/games");
+	}
+	if(!FatFS.exists("/players")) {
+		FatFS.mkdir("/players");
+	}
 }

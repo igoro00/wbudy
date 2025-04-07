@@ -1,5 +1,5 @@
-#include "main.h"
-#include "chars.h"
+#include "main.hpp"
+#include "chars.hpp"
 
 // znaki i ich grafiki muszą być w tej samej kolejności
 

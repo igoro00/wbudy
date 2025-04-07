@@ -1,5 +1,8 @@
+#include "WiFi.h"
+#include "FatFS.h"
 #include "aWOT.h"
-#include "main.h"
+
+#include "webserver.hpp"
 
 WiFiServer server(80);
 Application app;
@@ -12,6 +15,7 @@ void index(Request &req, Response &res) {
 	}
 	res.set("Content-Type", "text/html");
 	res.print(file.readString());
+	file.close();
 }
 
 void initWebserver() {
