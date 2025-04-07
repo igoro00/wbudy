@@ -7,12 +7,12 @@
 #include "sound.hpp"
 #include "colors.hpp"
 
+bool updateLCD;
 
 // settingPlayer:
 // 0 - no one
 // 1 - player 1
 // 4 - player 2
-bool updateLCD = true;
 void updateLobbyLCD(byte settingPlayer = 0) {
 	updateLCD = false;
 	LiquidCrystal_I2C *lcd = ctx.lcd;
@@ -22,10 +22,10 @@ void updateLobbyLCD(byte settingPlayer = 0) {
 	if (settingPlayer == 1) {
 		lcd->print("_");
 	}
-	if (ctx.game->getPlayer(0) == 0) {
+	if (ctx.game->getPlayer(0).uid == 0) {
 		lcd->print("Player 1");
 	} else {
-		printPolishMsg(*ctx.lcd, ctx.game->getPlayerName(0));
+		printPolishMsg(*ctx.lcd, ctx.game->getPlayer(0).name);
 	}
 	if (settingPlayer == 1) {
 		lcd->print("_");
@@ -35,10 +35,10 @@ void updateLobbyLCD(byte settingPlayer = 0) {
 	if (settingPlayer == 2) {
 		lcd->print("_");
 	}
-	if (ctx.game->getPlayer(1) == 0) {
+	if (ctx.game->getPlayer(1).uid == 0) {
 		lcd->print("Player 2");
 	} else {
-		printPolishMsg(*ctx.lcd, ctx.game->getPlayerName(1));
+		printPolishMsg(*ctx.lcd, ctx.game->getPlayer(1).name);
 	}
 	if (settingPlayer == 2) {
 		lcd->print("_");
@@ -54,7 +54,7 @@ void lobbyButtonISR(uint pin, uint32_t events) {
 
 #define START_GAME_TIME 1500
 void tLobby() {
-	Serial.println("tLobby");
+	updateLCD = true;
 	gpio_set_irq_enabled_with_callback(
 		YELLOW_BTN,
 		GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE,
@@ -67,13 +67,14 @@ void tLobby() {
 		true,
 		&lobbyButtonISR
 	);
-	Serial.println("after setting irq");
 	if (ctx.game == nullptr) {
 		ctx.game = std::make_unique<Game>(0, 0);
 	} else {
+		// we dont pass Player
+		// so it has time to refresh from the file system
 		ctx.game = std::make_unique<Game>(
-			ctx.game->getPlayer(0),
-			ctx.game->getPlayer(1)
+			ctx.game->getPlayer(0).uid,
+			ctx.game->getPlayer(1).uid
 		);
 	}
 
@@ -87,7 +88,7 @@ void tLobby() {
 		if (updateLCD)
 			updateLobbyLCD(redBtn | yellowBtn << 1);
 
-		if (rstBtn && ctx.game->getPlayer(0) && ctx.game->getPlayer(1) &&
+		if (rstBtn && ctx.game->getPlayer(0).uid && ctx.game->getPlayer(1).uid &&
 			!redBtn && !yellowBtn) {
 			if (lastRST == 0) {
 				lastRST = millis();

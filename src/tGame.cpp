@@ -8,14 +8,23 @@
 #include "colors.hpp"
 
 uint32_t pButtons[2] = {0, 0};
+bool canPress = false;
+
+// 0 - no one
+// 1 - player 1
+// 2 - player 2
+byte falseStart = 0;
 
 void gameButtonISR(uint pin, uint32_t events) {
-	if (pin == YELLOW_BTN && pButtons[0] == 0) {
+	if (pin == RED_BTN && pButtons[0] == 0) {
 		pButtons[0] = micros();
-	} else if (pin == RED_BTN && pButtons[1] == 0) {
+		falseStart = canPress ? 0 : 1;
+	} else if (pin == YELLOW_BTN && pButtons[1] == 0) {
 		pButtons[1] = micros();
+		falseStart = canPress ? 0 : 2;
 	}
 }
+
 
 // false if player 0 is faster
 // true if player 1 is faster
@@ -52,24 +61,31 @@ void tGame() {
 		&gameButtonISR
 	);
 	LiquidCrystal_I2C *lcd = ctx.lcd;
-	lcd->clear();
-	lcd->setCursor(0, 0);
-	lcd->print("Game is starting in...");
-	lcd->setCursor(0, 1);
-	lcd->print("3 ");
-	delay(1000);
-	lcd->print("2 ");
-	delay(1000);
-	lcd->print("1 ");
-	delay(1000);
-	lcd->print("GO!");
-	delay(1000);
-	lcd->clear();
+
+	// game starting animation
+	{
+		lcd->clear();
+		lcd->setCursor(0, 0);
+		lcd->print("Game is starting in...");
+		lcd->setCursor(0, 1);
+		lcd->print("3 ");
+		delay(1000);
+		lcd->print("2 ");
+		delay(1000);
+		lcd->print("1 ");
+		delay(1000);
+		lcd->print("GO!");
+		delay(1000);
+		lcd->clear();
+	}
+	
 	randomSeed(millis());
 
 	for (int i = 0; i < 5; i++) {
 		pButtons[0] = 0;
 		pButtons[1] = 0;
+		falseStart = 0;
+		canPress = false;
 		long player = random(2);
 		PlaySound(SoundEffect::STOP);
 		PlaySound(SoundEffect::GAME_WAITING);
@@ -78,20 +94,33 @@ void tGame() {
 		lcd->setCursor(0, 0);
 		lcd->print("Wait for light..");
 		delay(random(500, 5000));
+		canPress = true;
 		PlaySound(SoundEffect::STOP);
 		PlaySound(SoundEffect::PRESS);
 		lcd->clear();
 		lcd->setCursor(0, 0);
 		lcd->print("Press the button");
-		setLEDByUID(ctx.game->getPlayer(player));
+		setLEDByUID(ctx.game->getPlayer(player).uid);
 		uint32_t ledStarted = micros();
 		while (micros() - ledStarted < 5'000'000) {
 			bookkeeping();
 			if (!pButtons[0] && !pButtons[1]) {
 				continue;
 			}
+
+			// False start means the round is invalid
+			if (falseStart) {
+				PlaySound(SoundEffect::LOST);
+				lcd->clear();
+				lcd->setCursor(0, 0);
+				printPolishMsg(*lcd, ctx.game->getPlayer(falseStart-1).name);
+				lcd->setCursor(0, 1);
+				lcd->print("false started...");
+				break;
+			}
 			bool faster = fasterPlayer();
 			ctx.game->addRound(
+				player==0,
 				pButtons[0]-ledStarted,
 				pButtons[1]-ledStarted
 			);
@@ -99,7 +128,7 @@ void tGame() {
 				PlaySound(SoundEffect::WIN);
 				lcd->clear();
 				lcd->setCursor(0, 0);
-				printPolishMsg(*lcd, ctx.game->getPlayerName(player));
+				printPolishMsg(*lcd, ctx.game->getPlayer(player).name);
 				lcd->print(" won!");
 				lcd->setCursor(0, 1);
 				lcd->print((pButtons[player]-ledStarted)/1000);
@@ -109,7 +138,7 @@ void tGame() {
 				PlaySound(SoundEffect::LOST);
 				lcd->clear();
 				lcd->setCursor(0, 0);
-				printPolishMsg(*lcd, ctx.game->getPlayerName(player));
+				printPolishMsg(*lcd, ctx.game->getPlayer(faster).name);
 				lcd->setCursor(0, 1);
 				lcd->print("lost...");
 				break;

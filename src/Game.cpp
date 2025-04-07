@@ -2,12 +2,13 @@
 
 #include "cJSON.h"
 
+#include "PlayerDao.hpp"
 #include "Game.hpp"
 
 char *Game::toJSON() {
 	cJSON *game = cJSON_CreateObject();
-	cJSON_AddNumberToObject(game, "player1", player1);
-	cJSON_AddNumberToObject(game, "player2", player2);
+	cJSON_AddNumberToObject(game, "player1", player1.uid);
+	cJSON_AddNumberToObject(game, "player2", player2.uid);
 	cJSON *roundsArray = cJSON_CreateArray();
 	for (const auto &round : *rounds) {
 		cJSON *roundObj = cJSON_CreateArray();
@@ -22,34 +23,26 @@ char *Game::toJSON() {
 	return out;
 }
 
-const wchar_t *Game::getPlayerName(bool i) const {
-	uint32_t uid = i ? player1 : player2;
-
-	for (const auto &player : players) {
-		if (player.uid == uid) {
-			return player.name;
-		}
-	}
-
-	// player uid as hex
-	return std::format(L"{:x}", uid).c_str();
+void Game::save() {
 }
 
-void Game::addRound(uint32_t p1_us, uint32_t p2_us) {
-	rounds->push_back({p1_us, p2_us});
+void Game::addRound(bool player, uint32_t p1_us, uint32_t p2_us) {
+	rounds->push_back({player, p1_us, p2_us});
 }
 
-uint32_t Game::getPlayer(bool i) const { return i ? player1 : player2; }
+Player Game::getPlayer(bool i) const { return i==0 ? player1 : player2; }
 
 void Game::setPlayer(bool i, uint32_t uid) {
-	if (i) {
-		player1 = uid;
+    Player p = PlayerDao::getPlayer(uid);
+	if (i==0) {
+		player1 = p;
 	} else {
-		player2 = uid;
+		player2 = p;
 	}
 }
 
-Game::Game(uint32_t player1, uint32_t player2)
-	: player1(player1), player2(player2) {
+Game::Game(uint32_t p1uid, uint32_t p2uid) {
+    this->player1 = PlayerDao::getPlayer(p1uid);
+    this->player2 = PlayerDao::getPlayer(p2uid);
 	rounds = std::make_unique<std::vector<Round>>();
 }
