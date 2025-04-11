@@ -3,6 +3,7 @@
 // Task który czyta UID z karty
 // Jak znajdzie to zapisuje do ctx.cardUID oraz kończy się
 uint32_t tRfidRead() {
+	ctx.rfid->PCD_AntennaOn();
 	uint32_t uid = 0;
 	bool result = ctx.rfid->PICC_IsNewCardPresent();
 	if (!result) {
@@ -21,5 +22,6 @@ uint32_t tRfidRead() {
 
 	// Stop encryption on PCD
 	ctx.rfid->PCD_StopCrypto1();
+	ctx.rfid->PCD_AntennaOff();
 	return uid;
 }
