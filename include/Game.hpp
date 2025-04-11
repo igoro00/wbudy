@@ -28,6 +28,6 @@ public:
 	Player getPlayer(bool i) const;
 	void setPlayer(bool i, uint32_t uid);
 	void addRound(bool player, uint32_t p1_us, uint32_t p2_us);
-	char* toJSON();
+	const char* toJSON();
 	void save();
 };

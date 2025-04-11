@@ -121,8 +121,8 @@ void tGame() {
 			bool faster = fasterPlayer();
 			ctx.game->addRound(
 				player==0,
-				pButtons[0]-ledStarted,
-				pButtons[1]-ledStarted
+				pButtons[0] ? pButtons[0]-ledStarted+1 : 0,
+				pButtons[1] ? pButtons[1]-ledStarted+1 : 0
 			);
 			if (player == faster) {
 				PlaySound(SoundEffect::WIN);
@@ -164,6 +164,6 @@ void tGame() {
 		false
 	);
 	
-	ctx.game->toJSON();
+	ctx.game->save();
 	ctx.gameState = GameState::END;
 }
