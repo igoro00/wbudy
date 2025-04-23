@@ -19,13 +19,14 @@ const char *Game::toJSON() {
         if(round.p1_us > 0) {
             cJSON_AddItemToArray(roundObj, cJSON_CreateNumber(round.p1_us-1));
         } else {
-            cJSON_AddItemToArray(roundObj, cJSON_CreateBool(false));
+            cJSON_AddItemToArray(roundObj, cJSON_CreateNull());
         }
         if(round.p2_us > 0) {
             cJSON_AddItemToArray(roundObj, cJSON_CreateNumber(round.p2_us-1));
         } else {
-            cJSON_AddItemToArray(roundObj, cJSON_CreateBool(false));
+            cJSON_AddItemToArray(roundObj, cJSON_CreateNull());
         }
+		cJSON_AddItemToArray(roundsArray, roundObj);
 	}
 	cJSON_AddItemToObject(game, "rounds", roundsArray);
 	const char *out = cJSON_PrintUnformatted(game);
@@ -33,26 +34,22 @@ const char *Game::toJSON() {
 	return out;
 }
 
-// saves file in /games/<p1uid>_<p2uid>_<gameIndex>.json
-// game index is incremented for the same combination of players
+// saves file in /games/<gameIndex>.json and adds entry to /gamesIndex
 void Game::save() {
 	uint16_t gameIndex = 0;
 
 	fs::Dir dir = FatFS.openDir("/games");
 	while (dir.next()) {
-		dir.fileName();
-		if (dir.fileName().startsWith(
-				std::format("{:08X}_{:08X}", player1.uid, player2.uid).c_str()
-			)) {
-			gameIndex++;
+		// probably never gonna happen
+		if (gameIndex >= UINT16_MAX) {
+			return;
 		}
+		gameIndex++;
 	}
 
 	fs::File f = FatFS.open(
 		std::format(
-			"/games/{:08X}_{:08X}_{:05}.json",
-			player1.uid,
-			player2.uid,
+			"/games/{:05}.json",
 			gameIndex
 		)
 			.c_str(),
@@ -60,6 +57,23 @@ void Game::save() {
 	);
 	f.write(toJSON());
     f.close();
+	f = FatFS.open(
+		std::format(
+			"/gamesIndex",
+			gameIndex
+		)
+			.c_str(),
+		"a"
+	);
+	f.write(
+		std::format(
+			"{:08X}_{:08X}_{:05}\n",
+			player1.uid,
+			player2.uid,
+			gameIndex
+		).c_str()
+	);
+	f.close();
 }
 
 void Game::addRound(bool player, uint32_t p1_us, uint32_t p2_us) {

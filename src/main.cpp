@@ -10,7 +10,6 @@
 #include "webserver.hpp"
 #include "main.hpp"
 
-
 Context ctx;
 
 void setup() {
@@ -31,9 +30,10 @@ void setup() {
 	lcd->init();
 	loadChars(lcd);
 	lcd->backlight();
-
+	
 	rfid->PCD_Init();
-	rfid->PCD_WriteRegister(rfid->ComIEnReg, 0xA0);
+	// rfid->PCD_WriteRegister(rfid->ComIEnReg, 0xA0);
+	rfid->PCD_SoftPowerDown();
 
 	// pinMode(LED_BUILTIN, OUTPUT);
 	pinMode(LED_R, OUTPUT);

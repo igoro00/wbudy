@@ -49,10 +49,14 @@ void lobbyButtonISR(uint pin, uint32_t events) {
 	updateLCD = true;
 	if (events & GPIO_IRQ_EDGE_FALL) {
 		PlaySound(SoundEffect::OK);
+		
 	}
 }
 
-#define START_GAME_TIME 1500
+bool rfidOn = false;
+bool rfidShouldBe = false;
+
+#define START_GAME_TIME 1000
 void tLobby() {
 	updateLCD = true;
 	gpio_set_irq_enabled_with_callback(
@@ -81,6 +85,17 @@ void tLobby() {
 	uint32_t lastRST = 0;
 	while (1) {
 		bookkeeping();
+
+		if (rfidOn && !rfidShouldBe) {
+			rfidOn = false;
+			ctx.rfid->PCD_SoftPowerDown();
+		} else if (!rfidOn && rfidShouldBe) {
+			rfidOn = true;
+			ctx.rfid->PCD_Init();
+		}
+		digitalWrite(LED_BUILTIN, rfidOn);
+
+		rfidShouldBe = false;
 		bool yellowBtn = !digitalRead(YELLOW_BTN);
 		bool redBtn = !digitalRead(RED_BTN);
 		bool rstBtn = !digitalRead(GAME_RST_BTN);
@@ -103,7 +118,7 @@ void tLobby() {
 				}
 				break;
 			} else {
-				byte r = map(millis() - lastRST, 0, START_GAME_TIME, 0, 200);
+				byte r = pow(map(millis() - lastRST, 0, START_GAME_TIME, 0, 63), 3)/1024;
 				setLED(r, 0, 0);
 			}
 		} else {
@@ -129,12 +144,15 @@ void tLobby() {
 
 		// At this point exactly one button is pressed
 
-		uint32_t uid = tRfidRead();
-		if (uid) {
-			setLEDByUID(uid);
-			ctx.game->setPlayer(yellowBtn, uid);
-			updateLCD = true;
-			wait(100);
+		rfidShouldBe = true;
+		if(rfidOn) {
+			uint32_t uid = tRfidRead();
+			if (uid) {
+				setLEDByUID(uid);
+				ctx.game->setPlayer(yellowBtn, uid);
+				updateLCD = true;
+				wait(100);
+			}
 		}
 	}
 	gpio_set_irq_enabled(
