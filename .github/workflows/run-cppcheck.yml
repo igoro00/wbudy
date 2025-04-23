@@ -46,8 +46,8 @@ jobs:
             --force \
             --inline-suppr \
             --xml \
-            -i$GITHUB_WORKSPACE/file/or/dir/you/want/to/exclude/from/cppcheck \
-            $GITHUB_WORKSPACE/file/or/dir/you/want/to/include/in/cppcheck \
+            $GITHUB_WORKSPACE/lib \
+            $GITHUB_WORKSPACE/src \
             2> $GITHUB_WORKSPACE/cppcheck-result.xml
       
       - name: Parse CppCheck results
