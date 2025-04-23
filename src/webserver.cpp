@@ -19,18 +19,16 @@ void index(Request &req, Response &res) {
 }
 
 void initWebserver() {
-	WiFi.beginAP("Kurwa");
-	app.get("/", &index);
-	server.begin();
-	server.end();
-	WiFi.end();
+	// WiFi.beginAP("Reflex");
+	// app.get("/", &index);
+	// server.begin();
 }
 
 void handleClient() {
-	WiFiClient client = server.accept();
+	// WiFiClient client = server.accept();
 
-	if (client.connected()) {
-		app.process(&client);
-		client.stop();
-	}
+	// if (client.connected()) {
+	// 	app.process(&client);
+	// 	client.stop();
+	// }
 }
