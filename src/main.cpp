@@ -12,14 +12,20 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
+	// This function is called if a stack overflow is detected
+	// You can add your own error handling code here
+	while (1) {
+		printf("Stack overflow in task %s\n", pcTaskName);
+		printf("Reboot the device\n\n");
+		sleep_ms(1000);
+	}
+}
+
 void main_task(__unused void *params) {
 	if (cyw43_arch_init()) {
 		printf("failed to initialise\n");
 		return;
-	}
-
-	while (true) {
-		vTaskDelay(100);
 	}
 
 	cyw43_arch_deinit();
@@ -47,7 +53,7 @@ int main() {
 	vTaskStartScheduler();
 
 	while (true) {
-		printf("Hello, world!\n");
+		printf("Exited Scheduler\n");
 		sleep_ms(1000);
 	}
 }
