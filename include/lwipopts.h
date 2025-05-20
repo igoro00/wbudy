@@ -1,5 +1,4 @@
-#ifndef __LWIPOPTS_H__
-#define __LWIPOPTS_H__
+#pragma once
 
 // Common settings used in most of the pico_w examples
 // (see https://www.nongnu.org/lwip/2_1_x/group__lwip__opts.html for details)
@@ -85,5 +84,3 @@
 #define PPP_DEBUG                   LWIP_DBG_OFF
 #define SLIP_DEBUG                  LWIP_DBG_OFF
 #define DHCP_DEBUG                  LWIP_DBG_OFF
-
-#endif /* __LWIPOPTS_H__ */

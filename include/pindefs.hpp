@@ -1,3 +1,5 @@
+#pragma once
+
 #define YELLOW_BTN 17
 #define RED_BTN 16 
 #define GAME_RST_BTN 21
