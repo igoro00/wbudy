@@ -14,3 +14,9 @@ add_library(WbudyRFID STATIC
 target_include_directories(WbudyRFID PUBLIC
     ${PROJECT_SOURCE_DIR}/include
 )
+
+target_link_libraries(WbudyRFID
+    pico_stdlib
+    hardware_spi
+    hardware_gpio
+)

@@ -13,6 +13,7 @@
 #define PIN_CS   17
 #define PIN_SCK  18
 #define PIN_MOSI 19
+#define PIN_RST  20
 
 // I2C defines
 // This example will use I2C0 on GPIO8 (SDA) and GPIO9 (SCL) running at 400KHz.
@@ -26,15 +27,13 @@ int64_t alarm_callback(alarm_id_t id, void *user_data) {
     return 0;
 }
 
-
-
-
 int main()
 {
     stdio_init_all();
 
-    testWbudyRFID();
-
+    // Initialise the RFID reader
+    RfidReader rfid(PIN_SCK, PIN_MOSI, PIN_MISO, PIN_CS, PIN_RST);
+    
     // Initialise the Wi-Fi chip
     if (cyw43_arch_init()) {
         printf("Wi-Fi init failed\n");
