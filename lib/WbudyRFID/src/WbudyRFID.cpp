@@ -10,8 +10,6 @@ RfidReader::RfidReader(uint8_t sck_pin, uint8_t mosi_pin, uint8_t miso_pin, uint
     _miso_pin(miso_pin),
     _cs_pin(cs_pin),
     _rst_pin(rst_pin) {
-        
-    gpio_put(_cs_pin, 0);
     
     // Inicjalizacja SPI
     spiInit();
@@ -28,7 +26,7 @@ void RfidReader::spiInit() {
     
     gpio_init(_cs_pin);
     gpio_set_dir(_cs_pin, GPIO_OUT);
-     // CS nieaktywny
+    gpio_put(_cs_pin, 1); // CS nieaktywny
     
     gpio_init(_rst_pin);
     gpio_set_dir(_rst_pin, GPIO_OUT);
@@ -78,7 +76,7 @@ void RfidReader::writeRegister(uint8_t reg, uint8_t value) {
     // Wartość
     spiTransfer(value);
     
-     // CS nieaktywny
+    gpio_put(_cs_pin, 1); // CS nieaktywny
 }
 
 uint8_t RfidReader::readRegister(uint8_t reg) {
@@ -90,7 +88,7 @@ uint8_t RfidReader::readRegister(uint8_t reg) {
     // Odczyt wartości
     uint8_t value = spiTransfer(0x00);
     
-     // CS nieaktywny
+    gpio_put(_cs_pin, 1); // CS nieaktywny
     
     return value;
 }
@@ -98,9 +96,9 @@ uint8_t RfidReader::readRegister(uint8_t reg) {
 void RfidReader::reset() {
     // Reset sprzętowy
     gpio_put(_rst_pin, 0);
-    sleep_us(1);
+    sleep_ms(10);  // Dłuższy czas resetu
     gpio_put(_rst_pin, 1);
-    sleep_us(50);
+    sleep_ms(50);
     
     // Reset programowy
     writeRegister(COMMAND_REG, CMD_SOFT_RESET);
@@ -108,22 +106,33 @@ void RfidReader::reset() {
     // Czekaj na zakończenie resetu
     sleep_ms(50);
     
-    // Inicjalizacja
-    writeRegister(CONTROL_REG, 0x10); // Włącz przerwania
+    // Pełniejsza inicjalizacja
+    writeRegister(TModeReg, 0x8D);      // Timer settings
+    writeRegister(TPrescalerReg, 0x3E);  // Timer prescaler
+    writeRegister(TReloadRegL, 30);     // Timer reload low
+    writeRegister(TReloadRegH, 0);      // Timer reload high
+    writeRegister(TxASKReg, 0x40);      // TX ASK setting
+    writeRegister(ModeReg, 0x3D);       // General mode settings
+    
+    // Włącz anteny
+    uint8_t value = readRegister(TxControlReg);
+    if ((value & 0x03) != 0x03) {
+        writeRegister(TxControlReg, value | 0x03);
+    }
 }
 
 bool RfidReader::isNewCardPresent() {
     // Wyczyść bufor FIFO
     writeRegister(FIFO_LEVEL_REG, 0x80);
     
+    // Wyczyść wszystkie flagi przerwań
+    writeRegister(COM_IRQ_REG, 0x7F);
+    
     // Przygotuj komendę REQA
-    uint8_t buffer[2] = {0x26, 0x00}; // REQA command
+    writeRegister(FIFO_DATA_REG, 0x26); // REQA command
     
-    // Wyślij komendę
-    gpio_put(_cs_pin, 0);
-    spiTransfer(FIFO_DATA_REG & 0x7F);
-    spiTransfer(buffer[0]);
-    
+    // Ustaw bity dla 7 bitów w ostatnim bajcie
+    writeRegister(BitFramingReg, 0x07);
     
     // Ustaw tryb transceive
     writeRegister(COMMAND_REG, CMD_TRANSCEIVE);
@@ -139,7 +148,10 @@ bool RfidReader::isNewCardPresent() {
     do {
         irq = readRegister(COM_IRQ_REG);
         if (--timeout == 0) return false;
-    } while (!(irq & BIT_INTERRUPT_REQUEST));
+    } while (!(irq & (BIT_RX_DONE | BIT_TIMER_INTERRUPT)));
+    
+    // Sprawdź czy nie wystąpił timeout
+    if (irq & BIT_TIMER_INTERRUPT) return false;
     
     // Sprawdź czy otrzymaliśmy odpowiedź
     uint8_t fifoLevel = readRegister(FIFO_LEVEL_REG);
@@ -150,16 +162,15 @@ bool RfidReader::readCardSerial(uint8_t* uid) {
     // Wyczyść bufor FIFO
     writeRegister(FIFO_LEVEL_REG, 0x80);
     
-    // Przygotuj komendę SELECT
-    uint8_t buffer[9] = {0x93, 0x20}; // SELECT command
+    // Wyczyść wszystkie flagi przerwań
+    writeRegister(COM_IRQ_REG, 0x7F);
     
-    // Wyślij komendę
-    gpio_put(_cs_pin, 0);
-    spiTransfer(FIFO_DATA_REG & 0x7F);
-    for (uint8_t i = 0; i < 2; i++) {
-        spiTransfer(buffer[i]);
-    }
+    // Przygotuj komendę SELECT (ANTICOLLISION)
+    writeRegister(FIFO_DATA_REG, 0x93); // SELECT command
+    writeRegister(FIFO_DATA_REG, 0x20); // NVB - liczba bajtów
     
+    // Ustaw bity dla pełnego bajtu
+    writeRegister(BitFramingReg, 0x00);
     
     // Ustaw tryb transceive
     writeRegister(COMMAND_REG, CMD_TRANSCEIVE);
@@ -175,32 +186,35 @@ bool RfidReader::readCardSerial(uint8_t* uid) {
     do {
         irq = readRegister(COM_IRQ_REG);
         if (--timeout == 0) return false;
-    } while (!(irq & BIT_INTERRUPT_REQUEST));
+    } while (!(irq & (BIT_RX_DONE | BIT_TIMER_INTERRUPT)));
+    
+    // Sprawdź czy nie wystąpił timeout
+    if (irq & BIT_TIMER_INTERRUPT) return false;
+    
+    // Sprawdź czy otrzymaliśmy odpowiedź
+    uint8_t fifoLevel = readRegister(FIFO_LEVEL_REG);
+    if (fifoLevel < 5) return false; // UID + BCC
     
     // Odczytaj UID
-    uint8_t fifoLevel = readRegister(FIFO_LEVEL_REG);
-    if (fifoLevel < 4) return false;
-    
     for (uint8_t i = 0; i < 4; i++) {
-        gpio_put(_cs_pin, 0);
-        spiTransfer(FIFO_DATA_REG | 0x80);
-        uid[i] = spiTransfer(0x00);
+        uid[i] = readRegister(FIFO_DATA_REG);
     }
     
     return true;
 }
 
 void RfidReader::haltA() {
+    // Wyczyść bufor FIFO
+    writeRegister(FIFO_LEVEL_REG, 0x80);
+    
+    // Wyczyść wszystkie flagi przerwań
+    writeRegister(COM_IRQ_REG, 0x7F);
+    
     // Komenda HALT
-    uint8_t buffer[4] = {0x50, 0x00, 0x00, 0x00};
-    
-    // Wyślij komendę
-    gpio_put(_cs_pin, 0);
-    spiTransfer(FIFO_DATA_REG & 0x7F);
-    for (uint8_t i = 0; i < 4; i++) {
-        spiTransfer(buffer[i]);
-    }
-    
+    writeRegister(FIFO_DATA_REG, 0x50); // HALT command
+    writeRegister(FIFO_DATA_REG, 0x00);
+    writeRegister(FIFO_DATA_REG, 0x00);
+    writeRegister(FIFO_DATA_REG, 0x00); // CRC_A
     
     // Ustaw tryb transceive
     writeRegister(COMMAND_REG, CMD_TRANSCEIVE);
