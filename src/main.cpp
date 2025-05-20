@@ -1,16 +1,25 @@
-#include "hardware/i2c.h"
-#include "hardware/spi.h"
-#include "hardware/timer.h"
-#include "pico/cyw43_arch.h"
-#include "pico/stdlib.h"
+#include <hardware/i2c.h>
+#include <hardware/spi.h>
+#include <hardware/timer.h>
+#include <pico/cyw43_arch.h>
+#include <pico/stdlib.h>
 
-#include "lwip/apps/httpd.h"
-#include "lwip/apps/mdns.h"
-#include "lwip/init.h"
-#include "lwip/ip4_addr.h"
+#include <lwip/apps/httpd.h>
+#include <lwip/apps/mdns.h>
+#include <lwip/init.h>
+#include <lwip/ip4_addr.h>
 
-#include "FreeRTOS.h"
+#include <FreeRTOS.h>
+
 #include "task.h"
+
+#include "Context.hpp"
+
+Context ctx;
+
+void setupPins(){
+
+}
 
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
 	// This function is called if a stack overflow is detected

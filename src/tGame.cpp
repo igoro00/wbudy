@@ -13,7 +13,7 @@ bool canPress = false;
 // 0 - no one
 // 1 - player 1
 // 2 - player 2
-byte falseStart = 0;
+uint8_t falseStart = 0;
 
 void gameButtonISR(uint pin, uint32_t events) {
 	if (pin == RED_BTN && pButtons[0] == 0) {
