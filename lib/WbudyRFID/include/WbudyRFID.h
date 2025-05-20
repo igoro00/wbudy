@@ -3,6 +3,8 @@
 
 #include <cstdint>
 
+#include "hardware/structs/spi.h"
+
 class RfidReader {
 private:
     // Piny SPI
@@ -13,7 +15,7 @@ private:
     uint8_t _rst_pin;
     
     // Wskaźnik na strukturę SPI
-    void* _spi;
+    spi_hw_t* spi;
     
     // Rejestry MFRC522 (przykładowe)
     static constexpr uint8_t COMMAND_REG = 0x01;

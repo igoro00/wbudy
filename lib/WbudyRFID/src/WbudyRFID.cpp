@@ -34,8 +34,7 @@ void RfidReader::spiInit() {
     
     // Konfiguracja SPI bezpośrednio na rejestrach
     // Zakładam SPI0, można zmienić na SPI1 jeśli potrzeba
-    _spi = spi0_hw;
-    spi_hw_t* spi = (spi_hw_t*)_spi;
+    spi = spi0_hw;
     
     // Reset SPI
     spi->cr1 = 0;
@@ -55,8 +54,6 @@ void RfidReader::spiInit() {
 }
 
 uint8_t RfidReader::spiTransfer(uint8_t data) {
-    spi_hw_t* spi = (spi_hw_t*)_spi;
-    
     // Czekaj aż SPI będzie gotowe do transmisji
     while (!(spi->sr & SPI_SSPSR_TNF_BITS));
     
