@@ -10,6 +10,8 @@ RfidReader::RfidReader(uint8_t sck_pin, uint8_t mosi_pin, uint8_t miso_pin, uint
     _miso_pin(miso_pin),
     _cs_pin(cs_pin),
     _rst_pin(rst_pin) {
+        
+    gpio_put(_cs_pin, 0);
     
     // Inicjalizacja SPI
     spiInit();
@@ -26,7 +28,7 @@ void RfidReader::spiInit() {
     
     gpio_init(_cs_pin);
     gpio_set_dir(_cs_pin, GPIO_OUT);
-    gpio_put(_cs_pin, 1); // CS nieaktywny
+     // CS nieaktywny
     
     gpio_init(_rst_pin);
     gpio_set_dir(_rst_pin, GPIO_OUT);
@@ -76,7 +78,7 @@ void RfidReader::writeRegister(uint8_t reg, uint8_t value) {
     // Wartość
     spiTransfer(value);
     
-    gpio_put(_cs_pin, 1); // CS nieaktywny
+     // CS nieaktywny
 }
 
 uint8_t RfidReader::readRegister(uint8_t reg) {
@@ -88,7 +90,7 @@ uint8_t RfidReader::readRegister(uint8_t reg) {
     // Odczyt wartości
     uint8_t value = spiTransfer(0x00);
     
-    gpio_put(_cs_pin, 1); // CS nieaktywny
+     // CS nieaktywny
     
     return value;
 }
@@ -121,7 +123,7 @@ bool RfidReader::isNewCardPresent() {
     gpio_put(_cs_pin, 0);
     spiTransfer(FIFO_DATA_REG & 0x7F);
     spiTransfer(buffer[0]);
-    gpio_put(_cs_pin, 1);
+    
     
     // Ustaw tryb transceive
     writeRegister(COMMAND_REG, CMD_TRANSCEIVE);
@@ -157,7 +159,7 @@ bool RfidReader::readCardSerial(uint8_t* uid) {
     for (uint8_t i = 0; i < 2; i++) {
         spiTransfer(buffer[i]);
     }
-    gpio_put(_cs_pin, 1);
+    
     
     // Ustaw tryb transceive
     writeRegister(COMMAND_REG, CMD_TRANSCEIVE);
@@ -183,7 +185,6 @@ bool RfidReader::readCardSerial(uint8_t* uid) {
         gpio_put(_cs_pin, 0);
         spiTransfer(FIFO_DATA_REG | 0x80);
         uid[i] = spiTransfer(0x00);
-        gpio_put(_cs_pin, 1);
     }
     
     return true;
@@ -199,7 +200,7 @@ void RfidReader::haltA() {
     for (uint8_t i = 0; i < 4; i++) {
         spiTransfer(buffer[i]);
     }
-    gpio_put(_cs_pin, 1);
+    
     
     // Ustaw tryb transceive
     writeRegister(COMMAND_REG, CMD_TRANSCEIVE);
