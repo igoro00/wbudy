@@ -1,7 +1,5 @@
 #include <cstdint>
 
-#include "Arduino.h"
-
 #include "pindefs.hpp"
 #include "colors.hpp"
 
@@ -81,7 +79,7 @@ void setLEDByUID(u_int32_t uid) {
 }
 
 void setLED(byte r, byte g, byte b) {
-	analogWrite(LED_R, 255 - r);
-	analogWrite(LED_G, 255 - g);
-	analogWrite(LED_B, 255 - b);
+	// analogWrite(LED_R, 255 - r);
+	// analogWrite(LED_G, 255 - g);
+	// analogWrite(LED_B, 255 - b);
 }

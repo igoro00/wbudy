@@ -1,86 +1,84 @@
-#include "NonBlockingRtttl.h"
+#include "pico/stdlib.h"
+#include "hardware/spi.h"
+#include "hardware/i2c.h"
+#include "hardware/timer.h"
+#include "pico/cyw43_arch.h"
 
-#include "chars.hpp"
-#include "colors.hpp"
-#include "Game.hpp"
-#include "pindefs.hpp"
-#include "filesystem.hpp"
-#include "sound.hpp"
-#include "sysutils.hpp"
-#include "webserver.hpp"
-#include "main.hpp"
+// SPI Defines
+// We are going to use SPI 0, and allocate it to the following GPIO pins
+// Pins can be changed, see the GPIO function select table in the datasheet for information on GPIO assignments
+#define SPI_PORT spi0
+#define PIN_MISO 16
+#define PIN_CS   17
+#define PIN_SCK  18
+#define PIN_MOSI 19
 
-Context ctx;
+// I2C defines
+// This example will use I2C0 on GPIO8 (SDA) and GPIO9 (SCL) running at 400KHz.
+// Pins can be changed, see the GPIO function select table in the datasheet for information on GPIO assignments
+#define I2C_PORT i2c0
+#define I2C_SDA 8
+#define I2C_SCL 9
 
-void setup() {
-	ctx.gameState = GameState::END;
-	ctx.cardUID = 0;
-	ctx.game = nullptr;
-	LiquidCrystal_I2C *lcd = new LiquidCrystal_I2C(0x27, 16, 2);
-	ctx.lcd = lcd;
-	MFRC522 *rfid = new MFRC522(RFID_CS, RFID_RST);
-	ctx.rfid = rfid;
-	Serial.begin(115200);
-	SPI.setRX(RFID_MISO);
-	SPI.setTX(RFID_MOSI);
-	SPI.setSCK(RFID_SCK);
-	SPI.setCS(RFID_CS);
-	SPI.begin();
-	Wire.begin();
-	lcd->init();
-	loadChars(lcd);
-	lcd->backlight();
-	
-	rfid->PCD_Init();
-	// rfid->PCD_WriteRegister(rfid->ComIEnReg, 0xA0);
-	rfid->PCD_SoftPowerDown();
-
-	// pinMode(LED_BUILTIN, OUTPUT);
-	pinMode(LED_R, OUTPUT);
-	pinMode(LED_G, OUTPUT);
-	pinMode(LED_B, OUTPUT);
-
-	// digitalWrite(LED_BUILTIN, 1);
-	analogWrite(LED_R, 255);
-	analogWrite(LED_G, 255);
-	analogWrite(LED_B, 255);
-
-	pinMode(YELLOW_BTN, INPUT_PULLUP);
-	pinMode(RED_BTN, INPUT_PULLUP);
-	pinMode(GAME_RST_BTN, INPUT_PULLUP);
-	pinMode(SPEAKER, OUTPUT);
-
-	initFS();
-	initWebserver();
-
-	PlaySound(SoundEffect::SETUP_DONE);
-	waitForSoundEffect();
-	delay(1000);
+int64_t alarm_callback(alarm_id_t id, void *user_data) {
+    // Put your timeout handler code in here
+    return 0;
 }
 
 
-void loop() {
-	if (ctx.gameState == GameState::LOBBY) {
-		tLobby();
-	} else if (ctx.gameState == GameState::GAME) {
-		tGame();
-	} else {
-		bookkeeping();
-		if (rtttl::done()) {
-			PlaySound(SoundEffect::MAIN_THEME);
-		}
-		u_int32_t color = HSL2RGB((millis() / 4) % 256, 0xff, 0x7f);
-		byte r = color >> 16;
-		byte g = color >> 8;
-		byte b = color >> 0;
 
-		setLED(r, g, b);
-		ctx.lcd->setCursor(0, 0);
-		ctx.lcd->print("Game Over");
-		if (!digitalRead(GAME_RST_BTN)){
-			PlaySound(SoundEffect::OK);
-			waitForSoundEffect();
-			ctx.gameState = GameState::LOBBY;
-		}
-	}
+
+int main()
+{
+    stdio_init_all();
+
+    // Initialise the Wi-Fi chip
+    if (cyw43_arch_init()) {
+        printf("Wi-Fi init failed\n");
+        return -1;
+    }
+
+    // SPI initialisation. This example will use SPI at 1MHz.
+    spi_init(SPI_PORT, 1000*1000);
+    gpio_set_function(PIN_MISO, GPIO_FUNC_SPI);
+    gpio_set_function(PIN_CS,   GPIO_FUNC_SIO);
+    gpio_set_function(PIN_SCK,  GPIO_FUNC_SPI);
+    gpio_set_function(PIN_MOSI, GPIO_FUNC_SPI);
+    
+    // Chip select is active-low, so we'll initialise it to a driven-high state
+    gpio_set_dir(PIN_CS, GPIO_OUT);
+    gpio_put(PIN_CS, 1);
+    // For more examples of SPI use see https://github.com/raspberrypi/pico-examples/tree/master/spi
+
+    // I2C Initialisation. Using it at 400Khz.
+    i2c_init(I2C_PORT, 400*1000);
+    
+    gpio_set_function(I2C_SDA, GPIO_FUNC_I2C);
+    gpio_set_function(I2C_SCL, GPIO_FUNC_I2C);
+    gpio_pull_up(I2C_SDA);
+    gpio_pull_up(I2C_SCL);
+    // For more examples of I2C use see https://github.com/raspberrypi/pico-examples/tree/master/i2c
+
+    // Timer example code - This example fires off the callback after 2000ms
+    add_alarm_in_ms(2000, alarm_callback, NULL, false);
+    // For more examples of timer use see https://github.com/raspberrypi/pico-examples/tree/master/timer
+
+    // Enable wifi station
+    cyw43_arch_enable_sta_mode();
+
+    printf("Connecting to Wi-Fi...\n");
+    if (cyw43_arch_wifi_connect_timeout_ms("Your Wi-Fi SSID", "Your Wi-Fi Password", CYW43_AUTH_WPA2_AES_PSK, 30000)) {
+        printf("failed to connect.\n");
+        return 1;
+    } else {
+        printf("Connected.\n");
+        // Read the ip address in a human readable way
+        uint8_t *ip_address = (uint8_t*)&(cyw43_state.netif[0].ip_addr.addr);
+        printf("IP address %d.%d.%d.%d\n", ip_address[0], ip_address[1], ip_address[2], ip_address[3]);
+    }
+
+    while (true) {
+        printf("Hello, world!\n");
+        sleep_ms(1000);
+    }
 }
