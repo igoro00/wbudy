@@ -4,6 +4,7 @@
 #include "hardware/timer.h"
 #include "pico/cyw43_arch.h"
 #include "WbudyRFID.h"
+#include "WbudyLCD.h"
 
 // SPI Defines
 // We are going to use SPI 0, and allocate it to the following GPIO pins
@@ -31,56 +32,16 @@ int64_t alarm_callback(alarm_id_t id, void *user_data) {
 
 int main()
 {
+
+
     stdio_init_all();
-
-    testWbudyRFID();
-
-    // Initialise the Wi-Fi chip
-    if (cyw43_arch_init()) {
-        printf("Wi-Fi init failed\n");
-        return -1;
-    }
-
-    // SPI initialisation. This example will use SPI at 1MHz.
-    spi_init(SPI_PORT, 1000*1000);
-    gpio_set_function(PIN_MISO, GPIO_FUNC_SPI);
-    gpio_set_function(PIN_CS,   GPIO_FUNC_SIO);
-    gpio_set_function(PIN_SCK,  GPIO_FUNC_SPI);
-    gpio_set_function(PIN_MOSI, GPIO_FUNC_SPI);
-    
-    // Chip select is active-low, so we'll initialise it to a driven-high state
-    gpio_set_dir(PIN_CS, GPIO_OUT);
-    gpio_put(PIN_CS, 1);
-    // For more examples of SPI use see https://github.com/raspberrypi/pico-examples/tree/master/spi
-
-    // I2C Initialisation. Using it at 400Khz.
-    i2c_init(I2C_PORT, 400*1000);
-    
-    gpio_set_function(I2C_SDA, GPIO_FUNC_I2C);
-    gpio_set_function(I2C_SCL, GPIO_FUNC_I2C);
-    gpio_pull_up(I2C_SDA);
-    gpio_pull_up(I2C_SCL);
-    // For more examples of I2C use see https://github.com/raspberrypi/pico-examples/tree/master/i2c
-
-    // Timer example code - This example fires off the callback after 2000ms
-    add_alarm_in_ms(2000, alarm_callback, NULL, false);
-    // For more examples of timer use see https://github.com/raspberrypi/pico-examples/tree/master/timer
-
-    // Enable wifi station
-    cyw43_arch_enable_sta_mode();
+    lcd_init(0x27, I2C_SDA, I2C_SCL);  
+    lcd_clear();
+    lcd_set_cursor(0, 0);
+    lcd_print_char('A');
+    lcd_print(" Cześć!");
 
     
-
-    printf("Connecting to Wi-Fi...\n");
-    if (cyw43_arch_wifi_connect_timeout_ms("Your Wi-Fi SSID", "Your Wi-Fi Password", CYW43_AUTH_WPA2_AES_PSK, 30000)) {
-        printf("failed to connect.\n");
-        return 1;
-    } else {
-        printf("Connected.\n");
-        // Read the ip address in a human readable way
-        uint8_t *ip_address = (uint8_t*)&(cyw43_state.netif[0].ip_addr.addr);
-        printf("IP address %d.%d.%d.%d\n", ip_address[0], ip_address[1], ip_address[2], ip_address[3]);
-    }
 
     while (true) {
         printf("Hello, world!\n");
