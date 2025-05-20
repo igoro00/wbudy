@@ -3,6 +3,7 @@
 #include "hardware/i2c.h"
 #include "hardware/timer.h"
 #include "pico/cyw43_arch.h"
+#include "WbudyRFID.h"
 
 // SPI Defines
 // We are going to use SPI 0, and allocate it to the following GPIO pins
@@ -31,6 +32,8 @@ int64_t alarm_callback(alarm_id_t id, void *user_data) {
 int main()
 {
     stdio_init_all();
+
+    testWbudyRFID();
 
     // Initialise the Wi-Fi chip
     if (cyw43_arch_init()) {
@@ -65,6 +68,8 @@ int main()
 
     // Enable wifi station
     cyw43_arch_enable_sta_mode();
+
+    
 
     printf("Connecting to Wi-Fi...\n");
     if (cyw43_arch_wifi_connect_timeout_ms("Your Wi-Fi SSID", "Your Wi-Fi Password", CYW43_AUTH_WPA2_AES_PSK, 30000)) {

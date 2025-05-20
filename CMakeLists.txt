@@ -50,17 +50,20 @@ pico_enable_stdio_usb(wbudy 1)
 target_link_libraries(wbudy
         pico_stdlib)
 
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/WbudyLCD)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/WbudyRFID)
 # Add the standard include files to the build
 target_include_directories(wbudy PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}/include
 )
-
 # Add any user requested libraries
 target_link_libraries(wbudy 
         hardware_spi
         hardware_i2c
         hardware_timer
         pico_cyw43_arch_lwip_threadsafe_background
+        WbudyLCD
+        WbudyRFID
         )
 
 pico_add_extra_outputs(wbudy)
