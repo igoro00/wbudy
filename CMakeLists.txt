@@ -32,6 +32,9 @@ project(wbudy C CXX ASM)
 
 set(PICO_CXX_ENABLE_RTTI 1)
 
+set(FREERTOS_KERNEL_PATH ${CMAKE_CURRENT_LIST_DIR}/freertos/FreeRTOS-Kernel)
+set(FREERTOS_PORT_PATH ${CMAKE_CURRENT_LIST_DIR}/freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2040)
+
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
@@ -46,6 +49,8 @@ pico_set_program_version(wbudy "0.1")
 pico_enable_stdio_uart(wbudy 0)
 pico_enable_stdio_usb(wbudy 1)
 
+include(FreeRTOS_Kernel_import.cmake)
+
 # Add the standard library to the build
 target_link_libraries(wbudy
         pico_stdlib)
@@ -53,7 +58,7 @@ target_link_libraries(wbudy
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/WbudyLCD)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/WbudyRFID)
 # Add the standard include files to the build
-target_include_directories(wbudy PRIVATE
+target_include_directories(wbudy PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}/include
 )
 # Add any user requested libraries
@@ -62,6 +67,8 @@ target_link_libraries(wbudy
         hardware_i2c
         hardware_timer
         pico_cyw43_arch_lwip_threadsafe_background
+        pico_lwip_http
+        FreeRTOS-Kernel-Heap4
         WbudyLCD
         WbudyRFID
         )
