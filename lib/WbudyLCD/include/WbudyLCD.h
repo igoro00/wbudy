@@ -9,10 +9,8 @@ public:
     void init();
     void clear();
     void setCursor(uint8_t row, uint8_t col);
-    void printChar(char c);
-    void print(const char* str);
-    void loadCustomChar(uint8_t location, const uint8_t charmap[8]);
-    void printCustomChar(uint8_t location);
+    void printRegister(const char* str);
+    void printCharRegister(char c);
 
 private:
     i2c_inst_t* _i2c;
@@ -21,8 +19,13 @@ private:
     uint8_t _scl;
 
     void send(uint8_t data, uint8_t mode);
+    void sendRegister(uint8_t data, uint8_t mode);
     void sendCmd(uint8_t cmd);
-    void sendData(uint8_t data);
     void toggleEnable(uint8_t data);
-    void writeByte(uint8_t data);
+    void writeByteRegister(uint8_t data);
+    void sendCharRegister(char c);
+    void sendCmdRegister(uint8_t cmd);
+    void sendDataRegister(uint8_t data);
+    void toggleEnableRegister(uint8_t data);
+    
 };

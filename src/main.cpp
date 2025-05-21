@@ -6,30 +6,30 @@
 
 int main()
 {
-    stdio_init_all();
-	stdio_init_all();
-
     WbudyLCD lcd(i2c0, 0x27, 4, 5);
     lcd.init();
 
     lcd.setCursor(0, 0);
-    lcd.print("Witaj RP2040!");
+    //lcd.print("Witaj RP2040!");
+    lcd.printRegister("A");
+    lcd.setCursor(1,0);
+    lcd.printRegister("Hello!");
 
-    const uint8_t ogonek[8] = {
-        0b00000,
-        0b00100,
-        0b00000,
-        0b01110,
-        0b10001,
-        0b11111,
-        0b10000,
-        0b00000
-    };
+    //const uint8_t ogonek[8] = {
+    //    0b00000,
+    //    0b00100,
+    //    0b00000,
+    //    0b01110,
+    //    0b10001,
+    //    0b11111,
+    //    0b10000,
+    //    0b00000
+    //};
 
-    lcd.loadCustomChar(0, ogonek);
-    lcd.setCursor(1, 0);
-    lcd.print("Znak: ");
-    lcd.printCustomChar(0);
+    //lcd.loadCustomChar(0, ogonek);
+    //lcd.setCursor(1, 0);
+    //lcd.print("Znak: ");
+    //lcd.printCustomChar(0);
 
     while (true) {
         sleep_ms(1000);
