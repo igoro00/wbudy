@@ -1,38 +1,37 @@
 #include <format>
 
 // #include "FatFS.h"
-#include "cJSON.h"
 
 #include "Game.hpp"
 #include "PlayerDao.hpp"
 
-const char *Game::toJSON() {
-	cJSON *game = cJSON_CreateObject();
-	cJSON_AddNumberToObject(game, "player1", player1.uid);
-	cJSON_AddNumberToObject(game, "player2", player2.uid);
-	cJSON *roundsArray = cJSON_CreateArray();
-	for (const auto &round : *rounds) {
-		cJSON *roundObj = cJSON_CreateArray();
+// const char *Game::toJSON() {
+// 	cJSON *game = cJSON_CreateObject();
+// 	cJSON_AddNumberToObject(game, "player1", player1.uid);
+// 	cJSON_AddNumberToObject(game, "player2", player2.uid);
+// 	cJSON *roundsArray = cJSON_CreateArray();
+// 	for (const auto &round : *rounds) {
+// 		cJSON *roundObj = cJSON_CreateArray();
         
-        cJSON_AddItemToArray(roundObj, cJSON_CreateNumber(round.player));
+//         cJSON_AddItemToArray(roundObj, cJSON_CreateNumber(round.player));
 
-        if(round.p1_us > 0) {
-            cJSON_AddItemToArray(roundObj, cJSON_CreateNumber(round.p1_us-1));
-        } else {
-            cJSON_AddItemToArray(roundObj, cJSON_CreateNull());
-        }
-        if(round.p2_us > 0) {
-            cJSON_AddItemToArray(roundObj, cJSON_CreateNumber(round.p2_us-1));
-        } else {
-            cJSON_AddItemToArray(roundObj, cJSON_CreateNull());
-        }
-		cJSON_AddItemToArray(roundsArray, roundObj);
-	}
-	cJSON_AddItemToObject(game, "rounds", roundsArray);
-	const char *out = cJSON_PrintUnformatted(game);
-	cJSON_Delete(game);
-	return out;
-}
+//         if(round.p1_us > 0) {
+//             cJSON_AddItemToArray(roundObj, cJSON_CreateNumber(round.p1_us-1));
+//         } else {
+//             cJSON_AddItemToArray(roundObj, cJSON_CreateNull());
+//         }
+//         if(round.p2_us > 0) {
+//             cJSON_AddItemToArray(roundObj, cJSON_CreateNumber(round.p2_us-1));
+//         } else {
+//             cJSON_AddItemToArray(roundObj, cJSON_CreateNull());
+//         }
+// 		cJSON_AddItemToArray(roundsArray, roundObj);
+// 	}
+// 	cJSON_AddItemToObject(game, "rounds", roundsArray);
+// 	const char *out = cJSON_PrintUnformatted(game);
+// 	cJSON_Delete(game);
+// 	return out;
+// }
 
 // saves file in /games/<gameIndex>.json and adds entry to /gamesIndex
 void Game::save() {
