@@ -1,5 +1,4 @@
 #include "WbudyLCD.h"
-#include "pico/stdlib.h"
 
 #define LCD_BACKLIGHT 0x08
 #define LCD_ENABLE    0x04
@@ -10,8 +9,8 @@ WbudyLCD::WbudyLCD(i2c_inst_t* i2c, uint8_t i2c_addr, uint8_t sda, uint8_t scl)
     : _i2c(i2c), _addr(i2c_addr), _sda(sda), _scl(scl) {}
 
 void WbudyLCD::init() {
-    gpio_set_function(_sda, GPIO_FUNC_I2C);
-    gpio_set_function(_scl, GPIO_FUNC_I2C);
+    set_pin_function_i2c(_sda);
+    set_pin_function_i2c(_scl);
     gpio_pull_up(_sda);
     gpio_pull_up(_scl);
 
@@ -38,7 +37,7 @@ void WbudyLCD::init() {
     hw->enable = 1;
 
     // Czas na ustabilizowanie I2C i LCD
-    sleep_ms(50);
+    sleep_ms_custom(50);
 
     // Standardowa inicjalizacja HD44780
     sendCmd(0x33); // init
@@ -52,7 +51,7 @@ void WbudyLCD::init() {
 
 void WbudyLCD::clear() {
     sendCmd(0x01);
-    sleep_ms(2);
+    sleep_ms_custom(2);
 }
 
 void WbudyLCD::setCursor(uint8_t row, uint8_t col) {
@@ -64,23 +63,6 @@ void WbudyLCD::sendCmd(uint8_t cmd) {
     sendRegister(cmd, LCD_COMMAND);
 }
 
-void WbudyLCD::send(uint8_t data, uint8_t mode) {
-    uint8_t high = (data & 0xF0) | LCD_BACKLIGHT | mode;
-    uint8_t low  = ((data << 4) & 0xF0) | LCD_BACKLIGHT | mode;
-
-    writeByte(high);
-    toggleEnable(high);
-    writeByte(low);
-    toggleEnable(low);
-}
-
-void WbudyLCD::toggleEnable(uint8_t data) {
-    sleep_us(1);
-    writeByte(data | LCD_ENABLE);
-    sleep_us(1);
-    writeByte(data & ~LCD_ENABLE);
-    sleep_us(100);
-}
 
 void WbudyLCD::writeByteRegister(uint8_t data) {
     i2c_hw_t* hw = _i2c->hw;
@@ -123,4 +105,22 @@ void WbudyLCD::sendRegister(uint8_t data, uint8_t mode) {
     toggleEnableRegister(high);
     writeByteRegister(low);
     toggleEnableRegister(low);
+}
+
+void WbudyLCD::sleep_ms_custom(uint32_t ms) {
+    sleep_ms(ms);
+}
+
+void WbudyLCD::set_pin_function_i2c(uint pin) {
+    // Funkcja I2C = 3 (FUNCSEL = 3)
+    // Każdy pin ma swój rejestr CTRL pod adresem: IO_BANK0_BASE + 0x04 + 8*pin
+    volatile uint32_t* ctrl = (volatile uint32_t*)(IO_BANK0_BASE + 0x04 + 8 * pin);
+    // Wyczyść bity 0-4 i ustaw na 3
+    *ctrl = (*ctrl & ~0x1F) | 3;
+}
+
+void WbudyLCD::set_pin_pullup(uint pin) {
+    volatile uint32_t* pad = (volatile uint32_t*)(PADS_BANK0_BASE + 4 * pin);
+    // Ustaw PUE (bit 2), wyczyść PDE (bit 3)
+    *pad = (*pad | 0x04) & ~0x08;
 }

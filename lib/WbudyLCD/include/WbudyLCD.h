@@ -1,6 +1,11 @@
 #pragma once
 #include <cstdint>
+#include "pico/stdlib.h"
 #include "hardware/i2c.h"
+#include "hardware/regs/io_bank0.h"
+#include "hardware/structs/io_bank0.h"
+//#include "hardware/regs/iobank0.h"
+#include "hardware/regs/addressmap.h"
 
 class WbudyLCD {
 public:
@@ -18,14 +23,15 @@ private:
     uint8_t _sda;
     uint8_t _scl;
 
-    void send(uint8_t data, uint8_t mode);
     void sendRegister(uint8_t data, uint8_t mode);
     void sendCmd(uint8_t cmd);
-    void toggleEnable(uint8_t data);
     void writeByteRegister(uint8_t data);
     void sendCharRegister(char c);
     void sendCmdRegister(uint8_t cmd);
     void sendDataRegister(uint8_t data);
     void toggleEnableRegister(uint8_t data);
+    void sleep_ms_custom(uint32_t ms);
+    void set_pin_function_i2c(uint pin);
+    void set_pin_pullup(uint pin);
     
 };
