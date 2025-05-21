@@ -115,3 +115,5 @@ void tPlay_Portal2(void *pvParameters);
 // void tPlay_Press(void *pvParameters);
 // void tPlay_Lost(void *pvParameters);
 // void tPlay_Win(void *pvParameters);
+
+void cancelSound(TaskHandle_t task);

@@ -38,7 +38,9 @@ void setSpeakerFreq(uint16_t freq) {
 
 void playNote(uint16_t freq, uint32_t duration) {
 	setSpeakerFreq(freq);
-	vTaskDelay(duration / portTICK_PERIOD_MS);
+	if (duration > 0) {
+        vTaskDelay(duration / portTICK_PERIOD_MS);
+    }
 }
 
 void tPlay_Portal2(void *pvParameters) {
@@ -62,4 +64,9 @@ void tPlay_Portal2(void *pvParameters) {
 		playNote(NOTE_F4, beat);
 		playNote(0, beat);
 	}
+}
+
+void cancelSound(TaskHandle_t task) {
+    vTaskDelete(task);
+    playNote(0, 0);
 }

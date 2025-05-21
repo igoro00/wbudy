@@ -40,7 +40,20 @@ void main_task(__unused void *params) {
 		return;
 	}
 	while(1){
-		
+		if (player == NULL) {
+			xTaskCreate(
+				tPlay_Portal2,
+				"Portal2",
+				configMINIMAL_STACK_SIZE,
+				NULL,
+				tskIDLE_PRIORITY + 1,
+				&player
+			);
+		} else {
+			cancelSound(player);
+			player = NULL;
+
+		}
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
 	}
 
@@ -60,15 +73,6 @@ int main() {
 		NULL,
 		tskIDLE_PRIORITY,
 		&task
-	);
-
-	xTaskCreate(
-		tPlay_Portal2,
-		"Portal2",
-		configMINIMAL_STACK_SIZE,
-		NULL,
-		tskIDLE_PRIORITY + 1,
-		NULL
 	);
 
 	// we must bind the main task to one core (well at least while the init is
