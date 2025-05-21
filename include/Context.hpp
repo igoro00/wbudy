@@ -5,10 +5,7 @@
 
 #include "Game.hpp"
 
-enum GameState { LOBBY, GAME, END };
-
 struct Context {
-	GameState gameState;
 	uint32_t cardUID;
 	std::unique_ptr<Game> game;
 	// LiquidCrystal_I2C *lcd;

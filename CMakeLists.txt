@@ -6,6 +6,12 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    add_compile_options(-fdiagnostics-color=always)
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    add_compile_options(-fcolor-diagnostics)
+endif()
+
 # Initialise pico_sdk from installed location
 # (note this can come from environment, CMake cache etc)
 
@@ -23,7 +29,7 @@ if (EXISTS ${picoVscode})
     include(${picoVscode})
 endif()
 # ====================================================================================
-set(PICO_BOARD pico_w CACHE STRING "Board type")
+set(PICO_BOARD pico CACHE STRING "Board type")
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
@@ -57,6 +63,7 @@ target_link_libraries(wbudy
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/WbudyLCD)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/WbudyRFID)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/WbudyLED)
 # Add the standard include files to the build
 target_include_directories(wbudy PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}/include
@@ -66,11 +73,12 @@ target_link_libraries(wbudy
         hardware_spi
         hardware_i2c
         hardware_timer
-        pico_cyw43_arch_lwip_threadsafe_background
-        pico_lwip_http
+        # pico_cyw43_arch_lwip_threadsafe_background
+        # pico_lwip_http
         FreeRTOS-Kernel-Heap4
         WbudyLCD
         WbudyRFID
+        WbudyLED
         )
 
 pico_add_extra_outputs(wbudy)

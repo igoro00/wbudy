@@ -1,19 +1,38 @@
-#include <cstdint>
+#include "WbudyRGB.h"
 
-#include "pindefs.hpp"
-#include "colors.hpp"
-
-// Custom clamp function to replace std::clamp
-template <typename T> T clamp(T value, T min, T max) {
-	if (value < min)
-		return min;
-	if (value > max)
-		return max;
-	return value;
+WbudyRGB::WbudyRGB(uint32_t r, uint32_t g, uint32_t b) {
+    led_r = new std::shared_ptr<WbudyLED>(new WbudyLED(r));
+    led_g = new std::shared_ptr<WbudyLED>(new WbudyLED(g));
+    led_b = new std::shared_ptr<WbudyLED>(new WbudyLED(b));
 }
 
-uint32_t HSL2RGB(uint8_t h, uint8_t s, uint8_t l) {
-	// Convert from uint8_t range to float range
+void WbudyRGB::setRGB(uint8_t r, uint8_t g, uint8_t b) {
+    (*led_r)->set(r);
+    (*led_g)->set(g);
+    (*led_b)->set(b);
+}
+
+void WbudyRGB::setRGB(uint32_t rgb) {
+    uint8_t r = (rgb >> 16) & 0xFF;
+    uint8_t g = (rgb >> 8) & 0xFF;
+    uint8_t b = rgb & 0xFF;
+    setRGB(r, g, b);
+}
+
+void WbudyRGB::setHSL(uint8_t h, uint8_t s, uint8_t l) {
+    uint32_t rgb = hslToRGB(h, s, l);
+    setRGB(rgb);
+}
+
+void WbudyRGB::setHSL(uint32_t hsl) {
+    uint8_t h = (hsl >> 16) & 0xFF;
+    uint8_t s = (hsl >> 8) & 0xFF;
+    uint8_t l = hsl & 0xFF;
+    setHSL(h, s, l);
+}
+
+uint32_t WbudyRGB::hslToRGB(uint8_t h, uint8_t s, uint8_t l) { 
+    	// Convert from uint8_t range to float range
 	float hue = h / 255.0f * 360.0f;
 	float saturation = s / 255.0f;
 	float lightness = l / 255.0f;
@@ -55,31 +74,11 @@ uint32_t HSL2RGB(uint8_t h, uint8_t s, uint8_t l) {
 	return (red << 16) | (green << 8) | blue;
 }
 
-uint8_t simpleHash(uint32_t input) {
-	uint8_t hash = 0;
 
-	// Process each byte of the input
-	for (int i = 0; i < 4; ++i) {
-		hash ^= (input >> (i * 8)) & 0xFF; // XOR each byte into hash
-		hash = (hash << 3) | (hash >> 5);  // Rotate left by 3 bits
-	}
-
-	return hash;
-}
-
-void setLEDByUID(u_int32_t uid) {
-	uint8_t hue = simpleHash(uid);
-
-	u_int32_t color = HSL2RGB(hue, 0xff, 0x7f);
-	byte r = color >> 16;
-	byte g = color >> 8;
-	byte b = color >> 0;
-
-	setLED(r, g, b);
-}
-
-void setLED(byte r, byte g, byte b) {
-	// analogWrite(LED_R, 255 - r);
-	// analogWrite(LED_G, 255 - g);
-	// analogWrite(LED_B, 255 - b);
+template <typename T> inline T WbudyRGB::clamp(T value, T min, T max) {
+	if (value < min)
+		return min;
+	if (value > max)
+		return max;
+	return value;
 }

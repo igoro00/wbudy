@@ -1,6 +1,6 @@
 #include <format>
 
-#include "FatFS.h"
+// #include "FatFS.h"
 #include "cJSON.h"
 
 #include "Game.hpp"
@@ -38,42 +38,42 @@ const char *Game::toJSON() {
 void Game::save() {
 	uint16_t gameIndex = 0;
 
-	fs::Dir dir = FatFS.openDir("/games");
-	while (dir.next()) {
-		// probably never gonna happen
-		if (gameIndex >= UINT16_MAX) {
-			return;
-		}
-		gameIndex++;
-	}
+	// fs::Dir dir = FatFS.openDir("/games");
+	// while (dir.next()) {
+	// 	// probably never gonna happen
+	// 	if (gameIndex >= UINT16_MAX) {
+	// 		return;
+	// 	}
+	// 	gameIndex++;
+	// }
 
-	fs::File f = FatFS.open(
-		std::format(
-			"/games/{:05}.json",
-			gameIndex
-		)
-			.c_str(),
-		"w+"
-	);
-	f.write(toJSON());
-    f.close();
-	f = FatFS.open(
-		std::format(
-			"/gamesIndex",
-			gameIndex
-		)
-			.c_str(),
-		"a"
-	);
-	f.write(
-		std::format(
-			"{:08X}_{:08X}_{:05}\n",
-			player1.uid,
-			player2.uid,
-			gameIndex
-		).c_str()
-	);
-	f.close();
+	// fs::File f = FatFS.open(
+	// 	std::format(
+	// 		"/games/{:05}.json",
+	// 		gameIndex
+	// 	)
+	// 		.c_str(),
+	// 	"w+"
+	// );
+	// f.write(toJSON());
+    // f.close();
+	// f = FatFS.open(
+	// 	std::format(
+	// 		"/gamesIndex",
+	// 		gameIndex
+	// 	)
+	// 		.c_str(),
+	// 	"a"
+	// );
+	// f.write(
+	// 	std::format(
+	// 		"{:08X}_{:08X}_{:05}\n",
+	// 		player1.uid,
+	// 		player2.uid,
+	// 		gameIndex
+	// 	).c_str()
+	// );
+	// f.close();
 }
 
 void Game::addRound(bool player, uint32_t p1_us, uint32_t p2_us) {
