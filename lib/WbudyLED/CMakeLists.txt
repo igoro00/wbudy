@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Add the library (STATIC or SHARED)
 add_library(WbudyLED STATIC
     src/WbudyLED.cpp
+    src/WbudyRGB.cpp
 )
 
 target_link_libraries(WbudyLED PUBLIC

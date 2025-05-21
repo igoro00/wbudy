@@ -6,8 +6,23 @@ WbudyRGB::WbudyRGB(uint32_t r, uint32_t g, uint32_t b) {
     led_b = new std::shared_ptr<WbudyLED>(new WbudyLED(b));
 }
 
+WbudyRGB &WbudyRGB::operator=(const WbudyRGB &other) {
+	if (this != &other) {
+		// Clean up existing resources
+		delete led_r;
+		delete led_g;
+		delete led_b;
+
+		// Copy the values from the other object
+		led_r = other.led_r;
+		led_g = other.led_g;
+		led_b = other.led_b;
+	}
+	return *this;
+}
+
 void WbudyRGB::setRGB(uint8_t r, uint8_t g, uint8_t b) {
-    (*led_r)->set(r);
+	(*led_r)->set(r);
     (*led_g)->set(g);
     (*led_b)->set(b);
 }

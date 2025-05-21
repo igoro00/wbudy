@@ -9,6 +9,10 @@ class WbudyRGB {
     public:
         WbudyRGB(uint32_t r, uint32_t g, uint32_t b);
 
+        // Copy assignment operator
+        // So that misra doesnt complain
+        WbudyRGB& operator=(const WbudyRGB& other); 
+
         void setRGB(uint8_t r, uint8_t g, uint8_t b);
         void setRGB(uint32_t rgb);
         void setHSL(uint8_t h, uint8_t s, uint8_t l);

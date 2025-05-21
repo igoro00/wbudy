@@ -6,11 +6,6 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    add_compile_options(-fdiagnostics-color=always)
-elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    add_compile_options(-fcolor-diagnostics)
-endif()
 
 # Initialise pico_sdk from installed location
 # (note this can come from environment, CMake cache etc)
@@ -29,7 +24,7 @@ if (EXISTS ${picoVscode})
     include(${picoVscode})
 endif()
 # ====================================================================================
-set(PICO_BOARD pico CACHE STRING "Board type")
+set(PICO_BOARD pico_w CACHE STRING "Board type")
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
@@ -46,7 +41,10 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(wbudy src/main.cpp )
+add_executable(wbudy
+    src/main.cpp
+    src/tSound.cpp
+)
 
 pico_set_program_name(wbudy "wbudy")
 pico_set_program_version(wbudy "0.1")
@@ -73,8 +71,8 @@ target_link_libraries(wbudy
         hardware_spi
         hardware_i2c
         hardware_timer
-        # pico_cyw43_arch_lwip_threadsafe_background
-        # pico_lwip_http
+        pico_cyw43_arch_lwip_threadsafe_background
+        pico_lwip_http
         FreeRTOS-Kernel-Heap4
         WbudyLCD
         WbudyRFID
