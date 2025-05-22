@@ -11,9 +11,9 @@ int main()
 
     lcd.setCursor(0, 0);
     //lcd.print("Witaj RP2040!");
-    lcd.printRegister("A");
+    lcd.printRegister("Adrian");
     lcd.setCursor(1,0);
-    lcd.printRegister("Hello!");
+    lcd.printPolish(L"Urbańczyk");
 
     //const uint8_t ogonek[8] = {
     //    0b00000,

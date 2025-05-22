@@ -1,6 +1,6 @@
 #pragma once
+#include "PolishChars.hpp"
 #include <cstdint>
-#include "pico/stdlib.h"
 #include "hardware/i2c.h"
 #include "hardware/regs/io_bank0.h"
 #include "hardware/structs/io_bank0.h"
@@ -16,6 +16,7 @@ public:
     void setCursor(uint8_t row, uint8_t col);
     void printRegister(const char* str);
     void printCharRegister(char c);
+    void printPolish(const wchar_t* str);
 
 private:
     i2c_inst_t* _i2c;
@@ -33,7 +34,7 @@ private:
     void sleep_ms_custom(uint32_t ms);
     void set_pin_function_i2c(uint pin);
     void set_pin_pullup(uint pin);
-    void gpio_pull_up_register(uint pin);
-
-    
+    void loadCustomChar(uint8_t location, const uint8_t charmap[8]);
+    char mapPolishChar(wchar_t c);
+       
 };

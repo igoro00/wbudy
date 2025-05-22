@@ -45,6 +45,11 @@ void WbudyLCD::init() {
     sendCmd(0x28); // 2 lines, 5x8 font
     sendCmd(0x0C); // display ON, cursor OFF
     sendCmd(0x06); // entry mode
+
+    for (uint8_t i = 0; i < 8; ++i) {
+    loadCustomChar(i, polishCharsGraphic[i]);
+    }
+    
     clear();
 }
 
@@ -125,4 +130,32 @@ void WbudyLCD::set_pin_pullup(uint pin) {
     uint32_t val = *pad;
     val = (val & ~mask) | (1 << 3);
     *pad = val;
+}
+
+void WbudyLCD::loadCustomChar(uint8_t location, const uint8_t charmap[8]) {
+    location &= 0x7; // tylko 0-7
+    sendRegister(0x40 | (location << 3), LCD_COMMAND); // Ustaw adres CGRAM
+    for (int i = 0; i < 8; i++) {
+        sendRegister(charmap[i], LCD_DATA);
+    }
+}
+
+char WbudyLCD::mapPolishChar(wchar_t c) {
+    static const wchar_t polishChars[] = {L'ć', L'ę', L'ł', L'ń', L'ó', L'ś', L'ź', L'ż'};
+    for (int i = 0; i < 8; ++i) {
+        if (c == polishChars[i]) return i;
+    }
+    return 255; // nie znaleziono
+}
+
+void WbudyLCD::printPolish(const wchar_t* str) {
+    while (*str) {
+        char code = mapPolishChar(*str);
+        if (code < 8) {
+            sendCharRegister(code); // custom char
+        } else if (*str < 128) {
+            sendCharRegister((char)*str); // zwykły ASCII
+        }
+        ++str;
+    }
 }
