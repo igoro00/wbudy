@@ -2,14 +2,10 @@
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
 #include "WbudyRFID.h"
+#include "pindefs.hpp"
 
 // SPI Configuration
 #define SPI_PORT spi0
-#define PIN_MISO 0
-#define PIN_CS   1
-#define PIN_SCK  2
-#define PIN_MOSI 3
-#define PIN_RST  6
 
 int main() {
     // Initialize stdio
@@ -28,12 +24,12 @@ int main() {
     spi_set_format(SPI_PORT, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
     
     // Set up SPI pins
-    gpio_set_function(PIN_MISO, GPIO_FUNC_SPI);
-    gpio_set_function(PIN_SCK, GPIO_FUNC_SPI);
-    gpio_set_function(PIN_MOSI, GPIO_FUNC_SPI);
+    gpio_set_function(RFID_MISO, GPIO_FUNC_SPI);
+    gpio_set_function(RFID_SCK, GPIO_FUNC_SPI);
+    gpio_set_function(RFID_MOSI, GPIO_FUNC_SPI);
     
     // Create RFID reader instance
-    WbudyRFID rfid(SPI_PORT, PIN_CS, PIN_RST);
+    WbudyRFID rfid(SPI_PORT, RFID_CS, RFID_RST);
     
     // Initialize the RFID reader
     if (!rfid.init()) {
