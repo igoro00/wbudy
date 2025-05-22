@@ -11,8 +11,8 @@ WbudyLCD::WbudyLCD(i2c_inst_t* i2c, uint8_t i2c_addr, uint8_t sda, uint8_t scl)
 void WbudyLCD::init() {
     set_pin_function_i2c(_sda);
     set_pin_function_i2c(_scl);
-    gpio_pull_up(_sda);
-    gpio_pull_up(_scl);
+    set_pin_pullup(_sda);
+    set_pin_pullup(_scl);
 
     i2c_hw_t* hw = _i2c->hw;
 
@@ -120,7 +120,9 @@ void WbudyLCD::set_pin_function_i2c(uint pin) {
 }
 
 void WbudyLCD::set_pin_pullup(uint pin) {
-    volatile uint32_t* pad = (volatile uint32_t*)(PADS_BANK0_BASE + 4 * pin);
-    // Ustaw PUE (bit 2), wyczyść PDE (bit 3)
-    *pad = (*pad | 0x04) & ~0x08;
+    volatile uint32_t* pad = (volatile uint32_t*)(PADS_BANK0_BASE + 0x04 + 0x04 * pin);
+    uint32_t mask = (1 << 2) | (1 << 3); // tylko bity PDE i PUE
+    uint32_t val = *pad;
+    val = (val & ~mask) | (1 << 3);
+    *pad = val;
 }

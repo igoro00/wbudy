@@ -4,8 +4,8 @@
 #include "hardware/i2c.h"
 #include "hardware/regs/io_bank0.h"
 #include "hardware/structs/io_bank0.h"
-//#include "hardware/regs/iobank0.h"
 #include "hardware/regs/addressmap.h"
+#include "hardware/structs/padsbank0.h"
 
 class WbudyLCD {
 public:
@@ -33,5 +33,7 @@ private:
     void sleep_ms_custom(uint32_t ms);
     void set_pin_function_i2c(uint pin);
     void set_pin_pullup(uint pin);
+    void gpio_pull_up_register(uint pin);
+
     
 };
