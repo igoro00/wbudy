@@ -1,261 +1,199 @@
 #include "WbudyRFID.h"
-#include "hardware/gpio.h"
-#include "hardware/regs/spi.h"
-#include "hardware/structs/spi.h"
 #include "pico/stdlib.h"
+#include <stdio.h>
 
-RfidReader::RfidReader(uint8_t sck_pin, uint8_t mosi_pin, uint8_t miso_pin, uint8_t cs_pin, uint8_t rst_pin) :
-    _sck_pin(sck_pin),
-    _mosi_pin(mosi_pin),
-    _miso_pin(miso_pin),
-    _cs_pin(cs_pin),
-    _rst_pin(rst_pin) {
-    
-    // Inicjalizacja SPI
-    spiInit();
-    
-    // Reset i inicjalizacja czytnika RFID
-    reset();
+// Constructor
+WbudyRFID::WbudyRFID(spi_inst_t* spi, uint8_t csPin, uint8_t resetPin) {
+    _spi = spi;
+    _cs_pin = csPin;
+    _reset_pin = resetPin;
 }
 
-void RfidReader::spiInit() {
-    // Konfiguracja pinów
-    gpio_set_function(_sck_pin, GPIO_FUNC_SPI);
-    gpio_set_function(_mosi_pin, GPIO_FUNC_SPI);
-    gpio_set_function(_miso_pin, GPIO_FUNC_SPI);
-    
+// Initialize the RFID reader
+bool WbudyRFID::init() {
+    // Configure CS pin as output and set it high
     gpio_init(_cs_pin);
     gpio_set_dir(_cs_pin, GPIO_OUT);
-    gpio_put(_cs_pin, 1); // CS nieaktywny
+    gpio_put(_cs_pin, 1);
     
-    gpio_init(_rst_pin);
-    gpio_set_dir(_rst_pin, GPIO_OUT);
-    gpio_put(_rst_pin, 1); // Reset nieaktywny
+    // Configure reset pin as output and set it high
+    gpio_init(_reset_pin);
+    gpio_set_dir(_reset_pin, GPIO_OUT);
+    gpio_put(_reset_pin, 1);
     
-    // Konfiguracja SPI bezpośrednio na rejestrach
-    // Zakładam SPI0, można zmienić na SPI1 jeśli potrzeba
-    spi = spi0_hw;
+    // Reset the MFRC522
+    reset();
     
-    // Reset SPI
-    spi->cr1 = 0;
+    // Configure the MFRC522
+    writeRegister(TxASKReg, 0x40);       // 100% ASK modulation
+    writeRegister(ModeReg, 0x3D);        // CRC preset value = 0x6363
     
-    // Konfiguracja SPI: 1MHz, tryb 0, 8 bitów
-    uint32_t div = 125; // 125MHz (zegar systemowy) / 1MHz = 125
-    spi->cpsr = div & 0xFE; // Dzielnik musi być parzysty
+    // Turn on the antenna
+    antennaOn();
     
-    // CR0: 8-bit, CPOL=0, CPHA=0
-    spi->cr0 = (7 << SPI_SSPCR0_DSS_LSB) | // 8-bit (wartość 7 oznacza 8 bitów)
-               (0 << SPI_SSPCR0_FRF_LSB) |  // Format SPI
-               (0 << SPI_SSPCR0_SPO_LSB) | // CPOL=0
-               (0 << SPI_SSPCR0_SPH_LSB);  // CPHA=0
+    printf("MFRC522 Initialized\n");
     
-    // Włącz SPI
-    spi->cr1 = SPI_SSPCR1_SSE_BITS;
+    // Check if communication is working by reading version register
+    uint8_t version = readRegister(0x37);
+    printf("MFRC522 Version: 0x%02X\n", version);
+    
+    return (version != 0 && version != 0xFF);
 }
 
-uint8_t RfidReader::spiTransfer(uint8_t data) {
-    // Czekaj aż SPI będzie gotowe do transmisji
-    while (!(spi->sr & SPI_SSPSR_TNF_BITS));
+// Get UUID of card (returns 0 if no card present)
+uint32_t WbudyRFID::getUUID() {
+    // Check if a card is present
+    if (!isCardPresent()) {
+        return 0;
+    }
     
-    // Wyślij dane
-    spi->dr = data;
+    // Read the card serial number
+    if (!readCardSerial()) {
+        return 0;
+    }
     
-    // Czekaj na zakończenie transmisji
-    while (!(spi->sr & SPI_SSPSR_RNE_BITS));
+    // Convert the 4-byte UID to a 32-bit integer
+    uint32_t uuid = 0;
+    for (int i = 0; i < 4; i++) {
+        uuid = (uuid << 8) | _uid[i];
+    }
     
-    // Odbierz dane
-    return spi->dr & 0xFF;
+    return uuid;
 }
 
-void RfidReader::writeRegister(uint8_t reg, uint8_t value) {
-    gpio_put(_cs_pin, 0); // CS aktywny
+// Read a register from the MFRC522
+uint8_t WbudyRFID::readRegister(uint8_t reg) {
+    uint8_t value;
     
-    // Adres rejestru (bit 7 = 0 dla zapisu)
-    spiTransfer(reg & 0x7F);
+    // Select the MFRC522 by setting CS low
+    gpio_put(_cs_pin, 0);
     
-    // Wartość
-    spiTransfer(value);
+    // Send the register address with MSB set to 1 to indicate read
+    uint8_t address = ((reg << 1) & 0x7E) | 0x80;
+    spi_write_blocking(_spi, &address, 1);
     
-    gpio_put(_cs_pin, 1); // CS nieaktywny
-}
-
-uint8_t RfidReader::readRegister(uint8_t reg) {
-    gpio_put(_cs_pin, 0); // CS aktywny
+    // Read the value
+    spi_read_blocking(_spi, 0x00, &value, 1);
     
-    // Adres rejestru (bit 7 = 1 dla odczytu)
-    spiTransfer(reg | 0x80);
-    
-    // Odczyt wartości
-    uint8_t value = spiTransfer(0x00);
-    
-    gpio_put(_cs_pin, 1); // CS nieaktywny
+    // Deselect the MFRC522 by setting CS high
+    gpio_put(_cs_pin, 1);
     
     return value;
 }
 
-void RfidReader::reset() {
-    // Reset sprzętowy
-    gpio_put(_rst_pin, 0);
-    sleep_ms(10);  // Dłuższy czas resetu
-    gpio_put(_rst_pin, 1);
-    sleep_ms(50);
+// Write to a register in the MFRC522
+void WbudyRFID::writeRegister(uint8_t reg, uint8_t value) {
+    // Select the MFRC522 by setting CS low
+    gpio_put(_cs_pin, 0);
     
-    // Reset programowy
-    writeRegister(COMMAND_REG, CMD_SOFT_RESET);
+    // Send the register address with MSB set to 0 to indicate write
+    uint8_t address = (reg << 1) & 0x7E;
+    spi_write_blocking(_spi, &address, 1);
     
-    // Czekaj na zakończenie resetu
-    sleep_ms(50);
+    // Write the value
+    spi_write_blocking(_spi, &value, 1);
     
-    // Pełniejsza inicjalizacja
-    writeRegister(TModeReg, 0x8D);      // Timer settings
-    writeRegister(TPrescalerReg, 0x3E);  // Timer prescaler
-    writeRegister(TReloadRegL, 30);     // Timer reload low
-    writeRegister(TReloadRegH, 0);      // Timer reload high
-    writeRegister(TxASKReg, 0x40);      // TX ASK setting
-    writeRegister(ModeReg, 0x3D);       // General mode settings
-    
-    // Włącz anteny
+    // Deselect the MFRC522 by setting CS high
+    gpio_put(_cs_pin, 1);
+}
+
+// Set bits in a register
+void WbudyRFID::setBitMask(uint8_t reg, uint8_t mask) {
+    uint8_t tmp = readRegister(reg);
+    writeRegister(reg, tmp | mask);
+}
+
+// Clear bits in a register
+void WbudyRFID::clearBitMask(uint8_t reg, uint8_t mask) {
+    uint8_t tmp = readRegister(reg);
+    writeRegister(reg, tmp & (~mask));
+}
+
+// Turn on the antenna by enabling pins TX1 and TX2
+void WbudyRFID::antennaOn() {
     uint8_t value = readRegister(TxControlReg);
     if ((value & 0x03) != 0x03) {
         writeRegister(TxControlReg, value | 0x03);
     }
 }
 
-bool RfidReader::isNewCardPresent() {
-    // Wyczyść bufor FIFO
-    writeRegister(FIFO_LEVEL_REG, 0x80);
+// Reset the MFRC522
+void WbudyRFID::reset() {
+    // Soft reset
+    writeRegister(CommandReg, PCD_RESETPHASE);
     
-    // Wyczyść wszystkie flagi przerwań
-    writeRegister(COM_IRQ_REG, 0x7F);
+    // Wait for the reset to complete
+    sleep_ms(50);
+}
+
+// Check if a card is present
+bool WbudyRFID::isCardPresent() {
+    // Prepare for REQA command
+    writeRegister(BitFramingReg, 0x07);  // TxLastBits = 7 means transmit only 7 bits of the last byte
     
-    // Przygotuj komendę REQA
-    writeRegister(FIFO_DATA_REG, 0x26); // REQA command
+    // Send REQA command
+    writeRegister(ComIrqReg, 0x7F);      // Clear all interrupt flags
+    writeRegister(FIFOLevelReg, 0x80);   // Flush FIFO buffer
+    writeRegister(FIFODataReg, PICC_REQIDL); // Write data to transmit to FIFO
+    writeRegister(CommandReg, PCD_TRANSCEIVE); // Start transmission
+    writeRegister(BitFramingReg, 0x87);  // Start transmission (StartSend = 1)
     
-    // Ustaw bity dla 7 bitów w ostatnim bajcie
-    writeRegister(BitFramingReg, 0x07);
-    
-    // Ustaw tryb transceive
-    writeRegister(COMMAND_REG, CMD_TRANSCEIVE);
-    
-    // Rozpocznij transmisję
-    uint8_t control = readRegister(CONTROL_REG);
-    writeRegister(CONTROL_REG, control | 0x80);
-    
-    // Czekaj na odpowiedź (z timeoutem)
-    uint32_t timeout = 1000;
-    uint8_t irq;
-    
+    // Wait for the command to complete
+    uint8_t irqFlags;
+    uint8_t n = 0;
     do {
-        irq = readRegister(COM_IRQ_REG);
-        if (--timeout == 0) return false;
-    } while (!(irq & (BIT_RX_DONE | BIT_TIMER_INTERRUPT)));
+        irqFlags = readRegister(ComIrqReg);
+        n++;
+    } while ((n < 100) && !(irqFlags & 0x31)); // Wait for RxIRq, IdleIRq, or ErrIRq
     
-    // Sprawdź czy nie wystąpił timeout
-    if (irq & BIT_TIMER_INTERRUPT) return false;
+    // Check if a card responded
+    if (irqFlags & 0x01) { // Timer overflow
+        return false;
+    }
     
-    // Sprawdź czy otrzymaliśmy odpowiedź
-    uint8_t fifoLevel = readRegister(FIFO_LEVEL_REG);
+    uint8_t fifoLevel = readRegister(FIFOLevelReg);
     return (fifoLevel > 0);
 }
 
-bool RfidReader::readCardSerial(uint8_t* uid) {
-    // Wyczyść bufor FIFO
-    writeRegister(FIFO_LEVEL_REG, 0x80);
+// Read the card serial number
+bool WbudyRFID::readCardSerial() {
+    // Prepare for anticollision command
+    writeRegister(BitFramingReg, 0x00);  // TxLastBits = 0, RxAlign = 0
     
-    // Wyczyść wszystkie flagi przerwań
-    writeRegister(COM_IRQ_REG, 0x7F);
+    // Send anticollision command
+    writeRegister(ComIrqReg, 0x7F);      // Clear all interrupt flags
+    writeRegister(FIFOLevelReg, 0x80);   // Flush FIFO buffer
+    writeRegister(FIFODataReg, PICC_ANTICOLL); // Write data to transmit to FIFO
+    writeRegister(FIFODataReg, 0x20);    // NVB = 0x20, meaning no data bytes transmitted yet
+    writeRegister(CommandReg, PCD_TRANSCEIVE); // Start transmission
+    writeRegister(BitFramingReg, 0x80);  // Start transmission (StartSend = 1)
     
-    // Przygotuj komendę SELECT (ANTICOLLISION)
-    writeRegister(FIFO_DATA_REG, 0x93); // SELECT command
-    writeRegister(FIFO_DATA_REG, 0x20); // NVB - liczba bajtów
-    
-    // Ustaw bity dla pełnego bajtu
-    writeRegister(BitFramingReg, 0x00);
-    
-    // Ustaw tryb transceive
-    writeRegister(COMMAND_REG, CMD_TRANSCEIVE);
-    
-    // Rozpocznij transmisję
-    uint8_t control = readRegister(CONTROL_REG);
-    writeRegister(CONTROL_REG, control | 0x80);
-    
-    // Czekaj na odpowiedź (z timeoutem)
-    uint32_t timeout = 1000;
-    uint8_t irq;
-    
+    // Wait for the command to complete
+    uint8_t irqFlags;
+    uint8_t n = 0;
     do {
-        irq = readRegister(COM_IRQ_REG);
-        if (--timeout == 0) return false;
-    } while (!(irq & (BIT_RX_DONE | BIT_TIMER_INTERRUPT)));
+        irqFlags = readRegister(ComIrqReg);
+        n++;
+    } while ((n < 100) && !(irqFlags & 0x31)); // Wait for RxIRq, IdleIRq, or ErrIRq
     
-    // Sprawdź czy nie wystąpił timeout
-    if (irq & BIT_TIMER_INTERRUPT) return false;
+    // Check if a card responded
+    if (irqFlags & 0x01) { // Timer overflow
+        return false;
+    }
     
-    // Sprawdź czy otrzymaliśmy odpowiedź
-    uint8_t fifoLevel = readRegister(FIFO_LEVEL_REG);
-    if (fifoLevel < 5) return false; // UID + BCC
+    // Read the UID bytes
+    uint8_t fifoLevel = readRegister(FIFOLevelReg);
+    if (fifoLevel < 5) { // Should be 5 bytes (4 UID + 1 BCC)
+        return false;
+    }
     
-    // Odczytaj UID
     for (uint8_t i = 0; i < 4; i++) {
-        uid[i] = readRegister(FIFO_DATA_REG);
+        _uid[i] = readRegister(FIFODataReg);
     }
     
-    return true;
-}
-
-void RfidReader::haltA() {
-    // Wyczyść bufor FIFO
-    writeRegister(FIFO_LEVEL_REG, 0x80);
+    // Read and check BCC (Block Check Character)
+    uint8_t bcc = readRegister(FIFODataReg);
+    uint8_t calculated_bcc = _uid[0] ^ _uid[1] ^ _uid[2] ^ _uid[3];
     
-    // Wyczyść wszystkie flagi przerwań
-    writeRegister(COM_IRQ_REG, 0x7F);
-    
-    // Komenda HALT
-    writeRegister(FIFO_DATA_REG, 0x50); // HALT command
-    writeRegister(FIFO_DATA_REG, 0x00);
-    writeRegister(FIFO_DATA_REG, 0x00);
-    writeRegister(FIFO_DATA_REG, 0x00); // CRC_A
-    
-    // Ustaw tryb transceive
-    writeRegister(COMMAND_REG, CMD_TRANSCEIVE);
-    
-    // Rozpocznij transmisję
-    uint8_t control = readRegister(CONTROL_REG);
-    writeRegister(CONTROL_REG, control | 0x80);
-    
-    // Krótkie opóźnienie
-    sleep_ms(1);
-}
-
-void RfidReader::stopCrypto1() {
-    // Wyłącz szyfrowanie
-    uint8_t control = readRegister(CONTROL_REG);
-    writeRegister(CONTROL_REG, control & (~0x08));
-}
-
-uint32_t RfidReader::getUid() {
-    // Sprawdź czy karta jest obecna
-    if (!isNewCardPresent()) {
-        return 0;
-    }
-    
-    // Odczytaj numer seryjny karty
-    uint8_t uid[4];
-    if (!readCardSerial(uid)) {
-        return 0;
-    }
-    
-    // Konwersja 4 bajtów UID na uint32_t
-    uint32_t result = 0;
-    for (uint8_t i = 0; i < 4; i++) {
-        result = (result << 8) | uid[i];
-    }
-    
-    // Zatrzymaj komunikację z kartą
-    haltA();
-    
-    // Zatrzymaj szyfrowanie
-    stopCrypto1();
-    
-    return result;
+    return (bcc == calculated_bcc);
 }

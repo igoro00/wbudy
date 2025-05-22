@@ -37,7 +37,7 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(wbudy src/main.cpp )
+add_executable(wbudy src/main.cpp)
 
 pico_set_program_name(wbudy "wbudy")
 pico_set_program_version(wbudy "0.1")
@@ -67,4 +67,3 @@ target_link_libraries(wbudy
         )
 
 pico_add_extra_outputs(wbudy)
-
