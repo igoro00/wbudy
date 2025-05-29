@@ -26,7 +26,6 @@ void setupPins(){
 	ctx.taskMutex = xSemaphoreCreateMutex();
 	soundQueue = xQueueCreate(8, sizeof(SoundEffect));
 	initSound();
-
 	ctx.redButton.init(RED_BTN, false, 50);
 	ctx.yellowButton.init(YELLOW_BTN, false, 50);
 	ctx.rgb.init(LED_R, LED_G, LED_B);

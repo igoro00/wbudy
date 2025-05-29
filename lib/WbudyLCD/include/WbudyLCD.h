@@ -1,5 +1,5 @@
 #pragma once
-#include "PolishChars.hpp"
+#include "PolishChars.h"
 #include <cstdint>
 #include "hardware/i2c.h"
 #include "hardware/regs/io_bank0.h"
