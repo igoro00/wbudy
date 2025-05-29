@@ -17,7 +17,7 @@ public:
     void initLCD();
     void clear();
     void setCursor(uint8_t row, uint8_t col);
-    void printRegister(const char* str);
+    void print(const char* str);
     void printPolish(const wchar_t* str);
     void backlightOn();
     void backlightOff();
@@ -29,13 +29,11 @@ private:
     uint8_t _sda;
     uint8_t _scl;
 
-    void sendRegister(uint8_t data, uint8_t mode);
+    void sendData(uint8_t data, uint8_t mode);
     void sendCmd(uint8_t cmd);
-    void writeByteRegister(uint8_t data);
-    void sendCharRegister(char c);
-    void sendCmdRegister(uint8_t cmd);
-    void sendDataRegister(uint8_t data);
-    void toggleEnableRegister(uint8_t data);
+    void writeByte(uint8_t data);
+    void sendChar(char c);
+    void toggleEnable(uint8_t data);
     void sleep_ms_custom(uint32_t ms);
     void set_pin_function_i2c(uint pin);
     void set_pin_pullup(uint pin);

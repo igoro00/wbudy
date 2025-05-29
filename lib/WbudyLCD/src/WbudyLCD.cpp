@@ -32,7 +32,7 @@ void WbudyLCD::initLCD() {
     // Tryb master, standard speed (100kHz), restart enable, slave disable
     hw->con =
         (1 << 0) |          // master
-        (0b01 << 1) |       // speed: standard-mode
+        (1 << 1) |          // speed: standard-mode
         (1 << 5) |          // restart enable
         (1 << 6);           // slave disable
 
@@ -57,7 +57,7 @@ void WbudyLCD::initLCD() {
     sendCmd(0x06); // entry mode
 
     for (uint8_t i = 0; i < 8; ++i) {
-    loadCustomChar(i, polishCharsGraphic[i]);
+        loadCustomChar(i, polishCharsGraphic[i]);
     }
     
     clear();
@@ -75,53 +75,44 @@ void WbudyLCD::setCursor(uint8_t row, uint8_t col) {
 }
 
 void WbudyLCD::sendCmd(uint8_t cmd) {
-    sendRegister(cmd, LCD_COMMAND);
+    sendData(cmd, LCD_COMMAND);
 }
 
+void WbudyLCD::sendChar(char c) {
+    sendData(c, LCD_DATA);
+}
 
-void WbudyLCD::writeByteRegister(uint8_t data) {
+void WbudyLCD::writeByte(uint8_t data) {
     i2c_hw_t* hw = _i2c->hw;
     hw->data_cmd = data;
     while (!(hw->raw_intr_stat & I2C_IC_RAW_INTR_STAT_TX_EMPTY_BITS)) {
-        tight_loop_contents();
+        tight_loop_contents(); // TODO: na yield
     }
-    // NIE czekaj na STOP tutaj!
 }
 
-// Przykład: wyślij jeden znak na LCD przez rejestry
-void WbudyLCD::sendCharRegister(char c) {
-    uint8_t bl = _backlight ? LCD_BACKLIGHT : 0;
-    uint8_t high = (c & 0xF0) | bl | LCD_DATA;
-    uint8_t low  = ((c << 4) & 0xF0) | bl | LCD_DATA;
-   
-    writeByteRegister(high);
-    toggleEnableRegister(high);
-    writeByteRegister(low);
-    toggleEnableRegister(low);
-}
-
-void WbudyLCD::toggleEnableRegister(uint8_t data) {
+void WbudyLCD::toggleEnable(uint8_t data) {
     sleep_us(1);
-    writeByteRegister(data | LCD_ENABLE);
+    writeByte(data | LCD_ENABLE);
     sleep_us(1);
-    writeByteRegister(data & ~LCD_ENABLE);
+    writeByte(data & ~LCD_ENABLE);
     sleep_us(100);
 }
 
-// Przykład: wyślij tekst na LCD przez rejestry
-void WbudyLCD::printRegister(const char* str) {
-    while (*str) sendCharRegister(*str++);
+void WbudyLCD::print(const char* str) {
+    while (*str) {
+        sendChar(*str++);
+    }
 }
 
-void WbudyLCD::sendRegister(uint8_t data, uint8_t mode) {
+void WbudyLCD::sendData(uint8_t data, uint8_t mode) {
     uint8_t bl = _backlight ? LCD_BACKLIGHT : 0;
     int8_t high = (data & 0xF0) | bl | mode;
     uint8_t low  = ((data << 4) & 0xF0) | bl | mode;
 
-    writeByteRegister(high);
-    toggleEnableRegister(high);
-    writeByteRegister(low);
-    toggleEnableRegister(low);
+    writeByte(high);
+    toggleEnable(high);
+    writeByte(low);
+    toggleEnable(low);
 }
 
 void WbudyLCD::sleep_ms_custom(uint32_t ms) {
@@ -134,6 +125,7 @@ void WbudyLCD::set_pin_function_i2c(uint pin) {
     volatile uint32_t* ctrl = (volatile uint32_t*)(IO_BANK0_BASE + 0x04 + 8 * pin);
     // Wyczyść bity 0-4 i ustaw na 3
     *ctrl = (*ctrl & ~0x1F) | 3;
+    
 }
 
 void WbudyLCD::set_pin_pullup(uint pin) {
@@ -146,29 +138,29 @@ void WbudyLCD::set_pin_pullup(uint pin) {
 
 void WbudyLCD::loadCustomChar(uint8_t location, const uint8_t charmap[8]) {
     location &= 0x7; // tylko 0-7
-    sendRegister(0x40 | (location << 3), LCD_COMMAND); // Ustaw adres CGRAM
+    sendCmd(0x40 | (location << 3)); // Ustaw adres CGRAM
     for (int i = 0; i < 8; i++) {
-        sendRegister(charmap[i], LCD_DATA);
+        sendChar(charmap[i]);
     }
 }
 
 char WbudyLCD::mapPolishChar(wchar_t c) {
     static const wchar_t polishChars[] = {L'ć', L'ę', L'ł', L'ń', L'ó', L'ś', L'ź', L'ż'};
-    for (int i = 0; i < 8; ++i) {
+    for (int i = 0; i < 8; i++) {
         if (c == polishChars[i]) return i;
     }
-    return 255; // nie znaleziono
+    return -1; // nie znaleziono
 }
 
 void WbudyLCD::printPolish(const wchar_t* str) {
     while (*str) {
         char code = mapPolishChar(*str);
         if (code < 8) {
-            sendCharRegister(code); // custom char
+            sendChar(code); // custom char
         } else if (*str < 128) {
-            sendCharRegister((char)*str); // zwykły ASCII
+            sendChar((char)*str); // zwykły ASCII
         }
-        ++str;
+        str++;
     }
 }
 
