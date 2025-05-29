@@ -5,11 +5,20 @@
 #define LCD_COMMAND   0
 #define LCD_DATA      1
 
-WbudyLCD::WbudyLCD(i2c_inst_t* i2c, uint8_t i2c_addr, uint8_t sda, uint8_t scl)
-    : _i2c(i2c), _addr(i2c_addr), _sda(sda), _scl(scl) {}
+WbudyLCD::WbudyLCD(i2c_inst_t* i2c, uint8_t i2c_addr, uint8_t sda, uint8_t scl){
+    init(i2c,i2c_addr,sda,scl);
+}
 
+WbudyLCD::WbudyLCD() {}
 
-void WbudyLCD::init() {
+void WbudyLCD::init(i2c_inst_t *i2c, uint8_t i2c_addr, uint8_t sda, uint8_t scl) {
+    this->_i2c = i2c;
+    this->_addr = i2c_addr;
+    this->_sda = sda;
+    this->_scl = scl;
+}
+
+void WbudyLCD::initLCD() {
     set_pin_function_i2c(_sda);
     set_pin_function_i2c(_scl);
     set_pin_pullup(_sda);
@@ -85,7 +94,6 @@ void WbudyLCD::sendCharRegister(char c) {
     uint8_t high = (c & 0xF0) | bl | LCD_DATA;
     uint8_t low  = ((c << 4) & 0xF0) | bl | LCD_DATA;
    
-
     writeByteRegister(high);
     toggleEnableRegister(high);
     writeByteRegister(low);

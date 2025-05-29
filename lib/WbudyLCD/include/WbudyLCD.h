@@ -11,11 +11,13 @@ class WbudyLCD {
 public:
     WbudyLCD(i2c_inst_t* i2c, uint8_t i2c_addr, uint8_t sda, uint8_t scl);
 
-    void init();
+    WbudyLCD();
+    void init(i2c_inst_t* i2c, uint8_t i2c_addr, uint8_t sda, uint8_t scl);
+    
+    void initLCD();
     void clear();
     void setCursor(uint8_t row, uint8_t col);
     void printRegister(const char* str);
-    void printCharRegister(char c);
     void printPolish(const wchar_t* str);
     void backlightOn();
     void backlightOff();
