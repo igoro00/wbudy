@@ -48,6 +48,11 @@ jobs:
             --xml \
             $GITHUB_WORKSPACE/lib \
             $GITHUB_WORKSPACE/src \
+            -I $GITHUB_WORKSPACE/include \
+            -I $GITHUB_WORKSPACE/lib/WbudyLCD/include \
+            -I $GITHUB_WORKSPACE/lib/WbudyRFID/include \
+            -I $GITHUB_WORKSPACE/lib/WbudyLED/include \
+            -I $GITHUB_WORKSPACE/misra \
             2> $GITHUB_WORKSPACE/cppcheck-result.xml
       
       - name: Parse CppCheck results

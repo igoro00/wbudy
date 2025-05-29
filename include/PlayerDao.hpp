@@ -1,6 +1,6 @@
-#include <memory>
-#include <vector>
+#pragma once
 
+#include <cstdint>
 #include "Player.hpp"
 
 class PlayerDao {
