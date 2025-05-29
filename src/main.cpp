@@ -22,14 +22,20 @@ Context ctx;
 QueueHandle_t soundQueue;
 
 void setupPins(){
+	ctx.rgb.init(LED_R, LED_G, LED_B);
+	ctx.lcd.init(
+		i2c0,
+		0x27,
+		LCD_SDA,
+		LCD_SCL
+	);
+	ctx.redButton.init(RED_BTN, false, 50);
+	ctx.yellowButton.init(YELLOW_BTN, false, 50);
+	initSound();
+
 	ctx.gameState = GameState::MAIN;
 	ctx.taskMutex = xSemaphoreCreateMutex();
 	soundQueue = xQueueCreate(8, sizeof(SoundEffect));
-	initSound();
-
-	ctx.redButton.init(RED_BTN, false, 50);
-	ctx.yellowButton.init(YELLOW_BTN, false, 50);
-	ctx.rgb.init(LED_R, LED_G, LED_B);
 }
 
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
@@ -106,7 +112,7 @@ void tLoop(void *pvParameters) {
 
 int main() {
 	stdio_init_all();
-	sleep_ms(10000);
+	sleep_ms(1000);
 	setupPins();
 
 	TaskHandle_t task;

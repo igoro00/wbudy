@@ -10,6 +10,7 @@
 #include "Game.hpp"
 #include "WbudyBUTTON.h"
 #include "WbudyRGB.h"
+#include "WbudyLCD.h"
 enum class GameState {
 	MAIN,
 	LOBBY,
@@ -24,6 +25,7 @@ struct Context {
 	WbudyBUTTON redButton;
 	WbudyBUTTON yellowButton;
 	WbudyRGB rgb;
+	WbudyLCD lcd;
 
 	uint32_t cardUID;
 	std::unique_ptr<Game> game;

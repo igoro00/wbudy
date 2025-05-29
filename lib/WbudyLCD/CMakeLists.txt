@@ -10,6 +10,12 @@ add_library(WbudyLCD STATIC
     src/WbudyLCD.cpp
 )
 
+target_link_libraries(WbudyLCD
+        hardware_i2c
+        hardware_timer
+        pico_stdlib
+        )
+
 # Specify include directories for consumers of the library
 target_include_directories(WbudyLCD PUBLIC
     ${PROJECT_SOURCE_DIR}/include

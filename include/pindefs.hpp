@@ -12,3 +12,5 @@
 #define RFID_MISO 0
 #define RFID_MOSI 3
 #define SPEAKER 22
+#define LCD_SDA 4
+#define LCD_SCL 5
