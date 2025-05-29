@@ -7,6 +7,8 @@
 
 class WbudyRFID {
 public:
+    typedef void (*InterruptCallback)(uint32_t);
+
     // Constructor - sets up pins and initializes SPI
     WbudyRFID(spi_inst_t* spi, uint8_t csPin, uint8_t resetPin);
     
@@ -15,6 +17,12 @@ public:
     
     // Get UUID of card (returns 0 if no card present)
     uint32_t getUUID();
+
+    void attachInterrupt(InterruptCallback callback);
+    void detachInterrupt();
+
+    // Metoda do cyklicznego sprawdzania obecności karty i wywołania callbacka
+    void poll();
     
 private:
     // SPI communication methods
@@ -62,6 +70,9 @@ private:
     // PICC Commands
     static constexpr uint8_t PICC_REQIDL = 0x26;
     static constexpr uint8_t PICC_ANTICOLL = 0x93;
+
+    InterruptCallback _callback = nullptr;
+    bool _cardPresentLast = false; // do wykrywania zbocza (przyłożenie karty)
 };
 
 #endif // WBUDY_RFID_H

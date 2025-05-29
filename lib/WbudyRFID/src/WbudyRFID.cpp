@@ -197,3 +197,26 @@ bool WbudyRFID::readCardSerial() {
     
     return (bcc == calculated_bcc);
 }
+
+void WbudyRFID::attachInterrupt(InterruptCallback callback) {
+    _callback = callback;
+}
+
+void WbudyRFID::detachInterrupt() {
+    _callback = nullptr;
+}
+
+void WbudyRFID::poll() {
+    bool cardPresent = isCardPresent();
+    if (cardPresent && !_cardPresentLast && _callback) {
+        // Karta została właśnie przyłożona
+        if (readCardSerial()) {
+            uint32_t uuid = 0;
+            for (int i = 0; i < 4; i++) {
+                uuid = (uuid << 8) | _uid[i];
+            }
+            _callback(uuid);
+        }
+    }
+    _cardPresentLast = cardPresent;
+}
