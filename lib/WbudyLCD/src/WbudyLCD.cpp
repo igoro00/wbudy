@@ -16,9 +16,7 @@ void WbudyLCD::init(i2c_inst_t *i2c, uint8_t i2c_addr, uint8_t sda, uint8_t scl)
     this->_addr = i2c_addr;
     this->_sda = sda;
     this->_scl = scl;
-}
 
-void WbudyLCD::initLCD() {
     set_pin_function_i2c(_sda);
     set_pin_function_i2c(_scl);
     set_pin_pullup(_sda);
@@ -32,17 +30,19 @@ void WbudyLCD::initLCD() {
     // Tryb master, standard speed (100kHz), restart enable, slave disable
     hw->con =
         (1 << 0) |          // master
-        (1 << 1) |          // speed: standard-mode
+        (0b01 << 1) |          // speed: standard-mode
         (1 << 5) |          // restart enable
         (1 << 6);           // slave disable
 
+        
     // Adres urządzenia
     hw->tar = _addr;
-
+        
     // Zegar SCL (dla 100kHz przy 125MHz system clock)
+    // TODO: @Adzikoo wziąć system clock ze zmiennej i obliczać
     hw->ss_scl_hcnt = 600;
     hw->ss_scl_lcnt = 1300;
-
+    
     // Włącz I2C
     hw->enable = 1;
 
@@ -86,7 +86,7 @@ void WbudyLCD::writeByte(uint8_t data) {
     i2c_hw_t* hw = _i2c->hw;
     hw->data_cmd = data;
     while (!(hw->raw_intr_stat & I2C_IC_RAW_INTR_STAT_TX_EMPTY_BITS)) {
-        tight_loop_contents(); // TODO: na yield
+        tight_loop_contents();
     }
 }
 
@@ -164,5 +164,4 @@ void WbudyLCD::printPolish(const wchar_t* str) {
     }
 }
 
-void WbudyLCD::backlightOn()  { _backlight = true; }
-void WbudyLCD::backlightOff() { _backlight = false; }
+void WbudyLCD::setBacklight(bool val)  { _backlight = val; }

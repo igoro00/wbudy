@@ -29,6 +29,7 @@ struct Context {
 
 	uint32_t cardUID;
 	std::unique_ptr<Game> game;
+	// LiquidCrystal_I2C *lcd;
 	// MFRC522 *rfid;
 	
 	// Lazy loaded players list

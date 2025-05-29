@@ -14,14 +14,11 @@ public:
     WbudyLCD();
     void init(i2c_inst_t* i2c, uint8_t i2c_addr, uint8_t sda, uint8_t scl);
     
-    void initLCD();
     void clear();
     void setCursor(uint8_t row, uint8_t col);
     void print(const char* str);
     void printPolish(const wchar_t* str);
-    void backlightOn();
-    void backlightOff();
-
+    void setBacklight(bool val);
 
 private:
     i2c_inst_t* _i2c;
@@ -40,6 +37,4 @@ private:
     void loadCustomChar(uint8_t location, const uint8_t charmap[8]);
     char mapPolishChar(wchar_t c);
     bool _backlight = true;
-
-
 };

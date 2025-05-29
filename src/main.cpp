@@ -11,7 +11,6 @@
 
 #include <FreeRTOS.h>
 #include <task.h>
-#include <semphr.h>
 
 #include "tSound.h"
 #include "states.h"
@@ -22,15 +21,21 @@
 Context ctx;
 QueueHandle_t soundQueue;
 
-void setup(){
+void setupPins(){
+	ctx.rgb.init(LED_R, LED_G, LED_B);
+	ctx.lcd.init(
+		i2c0,
+		0x27,
+		LCD_SDA,
+		LCD_SCL
+	);
+	ctx.redButton.init(RED_BTN, false, 50);
+	ctx.yellowButton.init(YELLOW_BTN, false, 50);
+	initSound();
+
 	ctx.gameState = GameState::MAIN;
 	ctx.taskMutex = xSemaphoreCreateMutex();
-	// soundQueue = xQueueCreate(8, sizeof(SoundEffect));
-	// initSound();
-	// ctx.redButton.init(RED_BTN, false, 50);
-	// ctx.yellowButton.init(YELLOW_BTN, false, 50);
-	// ctx.rgb.init(LED_R, LED_G, LED_B);
-	// ctx.lcd.init(i2c0, 0x27, LCD_SDA, LCD_SCL);
+	soundQueue = xQueueCreate(8, sizeof(SoundEffect));
 }
 
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
@@ -107,14 +112,8 @@ void tLoop(void *pvParameters) {
 
 int main() {
 	stdio_init_all();
-	sleep_ms(5000);
-	printf("Setup started kurwa\n");
-	setup();
-	printf("Setup done\n");
-	while(1){
-		printf("while\n");
-		sleep_ms(1000);
-	}
+	sleep_ms(1000);
+	setupPins();
 
 	TaskHandle_t task;
 
