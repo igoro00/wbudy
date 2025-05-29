@@ -17,6 +17,9 @@ public:
     void printRegister(const char* str);
     void printCharRegister(char c);
     void printPolish(const wchar_t* str);
+    void backlightOn();
+    void backlightOff();
+
 
 private:
     i2c_inst_t* _i2c;
@@ -36,5 +39,7 @@ private:
     void set_pin_pullup(uint pin);
     void loadCustomChar(uint8_t location, const uint8_t charmap[8]);
     char mapPolishChar(wchar_t c);
-       
+    bool _backlight = true;
+
+
 };

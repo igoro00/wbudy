@@ -8,6 +8,7 @@
 WbudyLCD::WbudyLCD(i2c_inst_t* i2c, uint8_t i2c_addr, uint8_t sda, uint8_t scl)
     : _i2c(i2c), _addr(i2c_addr), _sda(sda), _scl(scl) {}
 
+
 void WbudyLCD::init() {
     set_pin_function_i2c(_sda);
     set_pin_function_i2c(_scl);
@@ -80,8 +81,10 @@ void WbudyLCD::writeByteRegister(uint8_t data) {
 
 // Przykład: wyślij jeden znak na LCD przez rejestry
 void WbudyLCD::sendCharRegister(char c) {
-    uint8_t high = (c & 0xF0) | LCD_BACKLIGHT | LCD_DATA;
-    uint8_t low  = ((c << 4) & 0xF0) | LCD_BACKLIGHT | LCD_DATA;
+    uint8_t bl = _backlight ? LCD_BACKLIGHT : 0;
+    uint8_t high = (c & 0xF0) | bl | LCD_DATA;
+    uint8_t low  = ((c << 4) & 0xF0) | bl | LCD_DATA;
+   
 
     writeByteRegister(high);
     toggleEnableRegister(high);
@@ -103,8 +106,9 @@ void WbudyLCD::printRegister(const char* str) {
 }
 
 void WbudyLCD::sendRegister(uint8_t data, uint8_t mode) {
-    uint8_t high = (data & 0xF0) | LCD_BACKLIGHT | mode;
-    uint8_t low  = ((data << 4) & 0xF0) | LCD_BACKLIGHT | mode;
+    uint8_t bl = _backlight ? LCD_BACKLIGHT : 0;
+    int8_t high = (data & 0xF0) | bl | mode;
+    uint8_t low  = ((data << 4) & 0xF0) | bl | mode;
 
     writeByteRegister(high);
     toggleEnableRegister(high);
@@ -159,3 +163,6 @@ void WbudyLCD::printPolish(const wchar_t* str) {
         ++str;
     }
 }
+
+void WbudyLCD::backlightOn()  { _backlight = true; }
+void WbudyLCD::backlightOff() { _backlight = false; }
