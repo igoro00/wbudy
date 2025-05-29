@@ -88,6 +88,8 @@
 #define NOTE_CS8 4435
 #define NOTE_D8 4699
 #define NOTE_DS8 4978
+
+#include <queue.h>
 // const char *SOUND_EFFECTS[] = {
 // 	// special values interpreted in core1 loop
 // 	(const char *)-1,
@@ -99,21 +101,29 @@
 // 	    "g,16c,a,8f.,16c,16d,16f,16p,f,16d,16c,16p,16f,16p,16a#,16a,16g,2f,16p,8a.,"
 // 	    "8f.,8c,8a.,f,16g#,16f,16c,16p,8g#.,2g,8a.,8f.,8c,8a.,f,16g#,16f,8c,2c6,"
 // 	    "p,p,p,p",
-// 	"portal2:"
-// 	    "d=4,o=4,b=180:a3,e4,a3,e4,a3,d#4,p,a3,d4,a3,d4,a3,f4,p",
-// 	"ok:d=4,o=6,b=320:e,e",
 // 	"press:d=4,o=6,b=400:c,g",
 // 	"lost:d=4,o=3,b=120:d,c,g2",
 // 	"win:d=4,o=5,b=320:c,c,c,g.",
 // };
 
+enum class SoundEffect {
+    // SETUP_DONE,
+    // MARIO_THEME,
+    PORTAL2,
+    OK,
+    // PRESS,
+    // LOST,
+    // WIN
+};
+
+extern QueueHandle_t soundQueue;
+
 void initSound();
 // void tPlay_SetupDone(void *pvParameters);
 // void tPlay_MarioTheme(void *pvParameters);
 void tPlay_Portal2(void *pvParameters);
-// void tPlay_OK(void *pvParameters);
+void tPlay_OK(void *pvParameters);
 // void tPlay_Press(void *pvParameters);
 // void tPlay_Lost(void *pvParameters);
 // void tPlay_Win(void *pvParameters);
-
-void cancelSound(TaskHandle_t task);
+void playSound(SoundEffect s);

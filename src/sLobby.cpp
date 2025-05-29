@@ -1,6 +1,16 @@
+#include <hardware/gpio.h>
+#include <stdio.h>
+
+#include <FreeRTOS.h>
+#include <task.h>
+#include <queue.h>
+
 #include "pindefs.hpp"
-#include "sound.hpp"
-#include "colors.hpp"
+#include "Context.h"
+
+#include "states.h"
+
+#include "tSound.h"
 
 bool updateLCD;
 
@@ -40,32 +50,16 @@ void updateLobbyLCD(uint8_t settingPlayer = 0) {
 	// }
 }
 
-void lobbyButtonISR(uint pin, uint32_t events) {
-	// updateLCD = true;
-	// if (events & GPIO_IRQ_EDGE_FALL) {
-	// 	PlaySound(SoundEffect::OK);
-		
-	// }
+void btnPressed(uint32_t pin, bool pressed) {
+	if (pressed) {
+		playSound(SoundEffect::OK);
+	}
 }
 
-bool rfidOn = false;
-bool rfidShouldBe = false;
-
 #define START_GAME_TIME 1000
-void tLobby() {
-	// updateLCD = true;
-	// gpio_set_irq_enabled_with_callback(
-	// 	YELLOW_BTN,
-	// 	GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE,
-	// 	true,
-	// 	&lobbyButtonISR
-	// );
-	// gpio_set_irq_enabled_with_callback(
-	// 	RED_BTN,
-	// 	GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE,
-	// 	true,
-	// 	&lobbyButtonISR
-	// );
+void sLobby(void *pvParameters) {
+	ctx.redButton.setCallback(btnPressed);
+
 	// if (ctx.game == nullptr) {
 	// 	ctx.game = std::make_unique<Game>(0, 0);
 	// } else {
@@ -78,9 +72,7 @@ void tLobby() {
 	// }
 
 	// uint32_t lastRST = 0;
-	// while (1) {
-	// 	bookkeeping();
-
+	while (1) {
 	// 	if (rfidOn && !rfidShouldBe) {
 	// 		rfidOn = false;
 	// 		ctx.rfid->PCD_SoftPowerDown();
@@ -149,15 +141,6 @@ void tLobby() {
 	// 			wait(100);
 	// 		}
 	// 	}
-	// }
-	// gpio_set_irq_enabled(
-	// 	RED_BTN,
-	// 	GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE,
-	// 	false
-	// );
-	// gpio_set_irq_enabled(
-	// 	YELLOW_BTN,
-	// 	GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE,
-	// 	false
-	// );
+		vTaskDelay(100 / portTICK_PERIOD_MS); // should be replace by a semaphore or something
+	}
 }

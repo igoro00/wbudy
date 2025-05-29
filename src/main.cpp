@@ -13,16 +13,24 @@
 #include <task.h>
 
 #include "tSound.h"
+#include "states.h"
 
-#include "Context.hpp"
+#include "Context.h"
+#include "pindefs.hpp"
 
 Context ctx;
+QueueHandle_t soundQueue;
 
 void setupPins(){
+	ctx.gameState = GameState::MAIN;
+	ctx.taskMutex = xSemaphoreCreateMutex();
+	soundQueue = xQueueCreate(8, sizeof(SoundEffect));
 	initSound();
-}
 
-TaskHandle_t player = NULL;
+	ctx.redButton.init(RED_BTN, false, 50);
+	ctx.yellowButton.init(YELLOW_BTN, false, 50);
+	ctx.rgb.init(LED_R, LED_G, LED_B);
+}
 
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
 	// This function is called if a stack overflow is detected
@@ -40,32 +48,69 @@ void main_task(__unused void *params) {
 		return;
 	}
 	while(1){
-		if (player == NULL) {
-			xTaskCreate(
-				tPlay_Portal2,
-				"Portal2",
-				configMINIMAL_STACK_SIZE,
-				NULL,
-				tskIDLE_PRIORITY + 1,
-				&player
-			);
-		} else {
-			cancelSound(player);
-			player = NULL;
-
-		}
+		printf("REDBTN = %d", ctx.redButton.isPressed());
+		printf(" debounced = %d", ctx.redButton.debounced);
+		printf(" gpio_get = %d\n", gpio_get(RED_BTN));
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
 	}
 
 	cyw43_arch_deinit();
 }
 
+void tLoop(void *pvParameters) {
+	while (1) {
+		printf("[Supervisor] trying to get mutex\n");
+		if(xSemaphoreTake(ctx.taskMutex, 10000/portTICK_PERIOD_MS) == pdTRUE) {
+			printf("[Supervisor] took mutex");
+			if(ctx.currentTask && eTaskGetState(ctx.currentTask) == eRunning) {
+				vTaskDelete(ctx.currentTask);
+			}
+			ctx.currentTask = NULL;
+			switch (ctx.gameState) {
+				case GameState::END:
+				case GameState::MAIN:
+					xTaskCreate(
+						sMain,
+						"sMain",
+						configMINIMAL_STACK_SIZE,
+						NULL,
+						tskIDLE_PRIORITY + 1,
+						&ctx.currentTask
+					);
+					break;
+				case GameState::LOBBY:
+					xTaskCreate(
+						sLobby,
+						"sLobby",
+						configMINIMAL_STACK_SIZE * 2,
+						NULL,
+						tskIDLE_PRIORITY + 1,
+						&ctx.currentTask
+					);
+					break;
+				case GameState::GAME:
+					xTaskCreate(
+						sGame,
+						"sGame",
+						configMINIMAL_STACK_SIZE * 4,
+						NULL,
+						tskIDLE_PRIORITY + 2,
+						&ctx.currentTask
+					);
+					break;
+			}
+			xSemaphoreGive(ctx.taskMutex);
+		}
+	}
+}
+
 int main() {
 	stdio_init_all();
-
+	sleep_ms(10000);
 	setupPins();
 
 	TaskHandle_t task;
+
 	xTaskCreate(
 		main_task,
 		"TestMainThread",
@@ -75,12 +120,14 @@ int main() {
 		&task
 	);
 
-	// we must bind the main task to one core (well at least while the init is
-	// called) (note we only do this in NO_SYS mode, because cyw43_arch_freertos
-	// takes care of it otherwise)
-	vTaskCoreAffinitySet(task, 1);
-
-	/* Start the tasks and timer running. */
+	xTaskCreate(
+		tLoop,
+		"tLoop",
+		8192,
+		NULL,
+		tskIDLE_PRIORITY + 1,
+		NULL
+	);
 	vTaskStartScheduler();
 
 	while (true) {

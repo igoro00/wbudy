@@ -1,6 +1,12 @@
+#include <FreeRTOS.h>
+#include <task.h>
+#include <hardware/gpio.h>
+
+#include "Context.h"
+
 #include "pindefs.hpp"
-#include "sound.hpp"
-#include "colors.hpp"
+
+#include "states.h"
 
 uint32_t pButtons[2] = {0, 0};
 bool canPress = false;
@@ -11,13 +17,13 @@ bool canPress = false;
 uint8_t falseStart = 0;
 
 void gameButtonISR(uint pin, uint32_t events) {
-	// if (pin == RED_BTN && pButtons[0] == 0) {
-	// 	pButtons[0] = micros();
-	// 	falseStart = canPress ? 0 : 1;
-	// } else if (pin == YELLOW_BTN && pButtons[1] == 0) {
-	// 	pButtons[1] = micros();
-	// 	falseStart = canPress ? 0 : 2;
-	// }
+	if (pin == RED_BTN && pButtons[0] == 0) {
+		pButtons[0] = 0;//micros();
+		falseStart = canPress ? 0 : 1;
+	} else if (pin == YELLOW_BTN && pButtons[1] == 0) {
+		pButtons[1] = 0;//micros();
+		falseStart = canPress ? 0 : 2;
+	}
 }
 
 
@@ -38,23 +44,23 @@ bool fasterPlayer(){
 	return false; // should never happen
 }
 
-void tGame() {
+void sGame(void *pvParameters) {
 	// if (ctx.game == nullptr) {
 	// 	Serial.println("GAME IS NULL");
 	// 	ctx.gameState = GameState::END;
 	// }
-	// gpio_set_irq_enabled_with_callback(
-	// 	YELLOW_BTN,
-	// 	GPIO_IRQ_EDGE_FALL,
-	// 	true,
-	// 	&gameButtonISR
-	// );
-	// gpio_set_irq_enabled_with_callback(
-	// 	RED_BTN,
-	// 	GPIO_IRQ_EDGE_FALL,
-	// 	true,
-	// 	&gameButtonISR
-	// );
+	gpio_set_irq_enabled_with_callback(
+		YELLOW_BTN,
+		GPIO_IRQ_EDGE_FALL,
+		true,
+		&gameButtonISR
+	);
+	gpio_set_irq_enabled_with_callback(
+		RED_BTN,
+		GPIO_IRQ_EDGE_FALL,
+		true,
+		&gameButtonISR
+	);
 	// LiquidCrystal_I2C *lcd = ctx.lcd;
 
 	// // game starting animation
@@ -76,7 +82,7 @@ void tGame() {
 	
 	// randomSeed(millis());
 
-	// for (int i = 0; i < 5; i++) {
+	for (int i = 0; i < 5; i++) {
 	// 	pButtons[0] = 0;
 	// 	pButtons[1] = 0;
 	// 	falseStart = 0;
@@ -147,18 +153,19 @@ void tGame() {
 	// 	setLED(0, 0, 0);
 	// 	delay(2000);
 	// 	lcd->clear();
-	// }
-	// gpio_set_irq_enabled(
-	// 	YELLOW_BTN,
-	// 	GPIO_IRQ_EDGE_FALL,
-	// 	false
-	// );
-	// gpio_set_irq_enabled(
-	// 	RED_BTN,
-	// 	GPIO_IRQ_EDGE_FALL,
-	// 	false
-	// );
+	}
+	gpio_set_irq_enabled(
+		YELLOW_BTN,
+		GPIO_IRQ_EDGE_FALL,
+		false
+	);
+	gpio_set_irq_enabled(
+		RED_BTN,
+		GPIO_IRQ_EDGE_FALL,
+		false
+	);
 	
 	// ctx.game->save();
 	// ctx.gameState = GameState::END;
+	vTaskDelete(NULL);
 }

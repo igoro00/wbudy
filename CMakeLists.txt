@@ -44,6 +44,9 @@ pico_sdk_init()
 add_executable(wbudy
     src/main.cpp
     src/tSound.cpp
+    src/sMain.cpp
+    src/sLobby.cpp
+    src/sGame.cpp
 )
 
 pico_set_program_name(wbudy "wbudy")
@@ -59,25 +62,27 @@ include(FreeRTOS_Kernel_import.cmake)
 target_link_libraries(wbudy
         pico_stdlib)
 
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/WbudyLCD)
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/WbudyRFID)
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/WbudyLED)
 # Add the standard include files to the build
 target_include_directories(wbudy PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}/include
 )
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/WbudyLCD)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/WbudyRFID)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/WbudyLED)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/WbudyBUTTON)
 # Add any user requested libraries
 target_link_libraries(wbudy 
-        hardware_spi
-        hardware_i2c
-        hardware_timer
-        pico_cyw43_arch_lwip_threadsafe_background
-        pico_lwip_http
-        FreeRTOS-Kernel-Heap4
-        WbudyLCD
-        WbudyRFID
-        WbudyLED
-        )
+    hardware_spi
+    hardware_i2c
+    hardware_timer
+    pico_cyw43_arch_lwip_threadsafe_background
+    pico_lwip_http
+    FreeRTOS-Kernel-Heap4
+    WbudyLCD
+    WbudyRFID
+    WbudyLED
+    WbudyBUTTON
+)
 
 pico_add_extra_outputs(wbudy)
 

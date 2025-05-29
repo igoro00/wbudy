@@ -1,30 +1,21 @@
 #include "WbudyRGB.h"
 
-WbudyRGB::WbudyRGB(uint32_t r, uint32_t g, uint32_t b) {
-    led_r = new std::shared_ptr<WbudyLED>(new WbudyLED(r));
-    led_g = new std::shared_ptr<WbudyLED>(new WbudyLED(g));
-    led_b = new std::shared_ptr<WbudyLED>(new WbudyLED(b));
+WbudyRGB::WbudyRGB(uint32_t r, uint32_t g, uint32_t b, bool inverted) {
+    this->init(r, g, b, inverted);
 }
 
-WbudyRGB &WbudyRGB::operator=(const WbudyRGB &other) {
-	if (this != &other) {
-		// Clean up existing resources
-		delete led_r;
-		delete led_g;
-		delete led_b;
+WbudyRGB::WbudyRGB() {}
 
-		// Copy the values from the other object
-		led_r = other.led_r;
-		led_g = other.led_g;
-		led_b = other.led_b;
-	}
-	return *this;
+void WbudyRGB::init(uint32_t r, uint32_t g, uint32_t b, bool inverted) {
+	led_r.init(r, inverted);
+    led_g.init(g, inverted);
+    led_b.init(b, inverted);
 }
 
 void WbudyRGB::setRGB(uint8_t r, uint8_t g, uint8_t b) {
-	(*led_r)->set(r);
-    (*led_g)->set(g);
-    (*led_b)->set(b);
+	led_r.set(r);
+    led_g.set(g);
+    led_b.set(b);
 }
 
 void WbudyRGB::setRGB(uint32_t rgb) {

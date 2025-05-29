@@ -1,11 +1,15 @@
 #include <hardware/pwm.h>
 #include <pico/stdlib.h>
+#include <stdio.h>
 
 #include <FreeRTOS.h>
 #include <task.h>
+#include <semphr.h>
 
 #include "pindefs.hpp"
+#include "Context.h"
 #include "tSound.h"
+
 
 void initSound() {
 	gpio_set_function(SPEAKER, GPIO_FUNC_PWM);
@@ -66,7 +70,46 @@ void tPlay_Portal2(void *pvParameters) {
 	}
 }
 
-void cancelSound(TaskHandle_t task) {
-    vTaskDelete(task);
-    playNote(0, 0);
+void tPlay_OK(void *pvParameters) {
+	printf("Playing OK sound\n");
+	// 	"ok:d=4,o=6,b=320:e,e",
+	uint32_t bpm = 320; // beats per minute, beat is 1/4 note
+	uint32_t beat = (60000 / bpm); // ms per beat
+	playNote(NOTE_E6, beat);
+	playNote(0, beat/8);
+	playNote(NOTE_E6, beat);
+	playNote(0, 0);
+	vTaskDelete(NULL);
+}
+
+TaskHandle_t tPlayer = NULL;
+void playSound(SoundEffect s) {
+	if (tPlayer && eTaskGetState(tPlayer) != eDeleted) {
+		vTaskDelete(tPlayer);
+		playNote(0, 0);
+		tPlayer = NULL;
+	}
+	
+	switch (s) {
+		case SoundEffect::PORTAL2:
+			xTaskCreate(
+				tPlay_Portal2,
+				"tPlay_Portal2",
+				configMINIMAL_STACK_SIZE,
+				NULL,
+				tskIDLE_PRIORITY + 5,
+				&tPlayer
+			);
+			break;
+		case SoundEffect::OK:
+			xTaskCreate(
+				tPlay_OK,
+				"tPlay_OK",
+				configMINIMAL_STACK_SIZE,
+				NULL,
+				tskIDLE_PRIORITY + 5,
+				&tPlayer
+			);
+			break;
+	}
 }

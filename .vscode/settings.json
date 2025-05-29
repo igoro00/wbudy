@@ -63,6 +63,8 @@
         "thread": "cpp",
         "functional": "cpp",
         "tuple": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "wbudybuttoncpp": "cpp"
     },
+    "C_Cpp.errorSquiggles": "disabled",
 }
