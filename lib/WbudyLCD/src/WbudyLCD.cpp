@@ -149,7 +149,7 @@ char WbudyLCD::mapPolishChar(wchar_t c) {
     for (int i = 0; i < 8; i++) {
         if (c == polishChars[i]) return i;
     }
-    return -1; // nie znaleziono
+    return 0xFF; // nie znaleziono
 }
 
 void WbudyLCD::printPolish(const wchar_t* str) {
