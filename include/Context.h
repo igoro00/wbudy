@@ -24,6 +24,7 @@ struct Context {
 
 	WbudyBUTTON redButton;
 	WbudyBUTTON yellowButton;
+	WbudyBUTTON resetButton;
 	WbudyRGB rgb;
 	WbudyLCD lcd;
 

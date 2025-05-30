@@ -21,6 +21,13 @@
 Context ctx;
 QueueHandle_t soundQueue;
 
+// In main.c or a new file, e.g., time_us_32_shim.c
+#include "hardware/timer.h"
+
+uint32_t micros32(void) {
+    return time_us_32(); // Calls the SDK's static inline function
+}
+
 void setupPins(){
 	ctx.rgb.init(LED_R, LED_G, LED_B);
 	ctx.lcd.init(
@@ -31,10 +38,12 @@ void setupPins(){
 	);
 	ctx.redButton.init(RED_BTN, false, 50);
 	ctx.yellowButton.init(YELLOW_BTN, false, 50);
+	ctx.resetButton.init(GAME_RST_BTN, false, 50);
 	initSound();
 
 	ctx.gameState = GameState::MAIN;
-	ctx.taskMutex = xSemaphoreCreateMutex();
+	ctx.taskMutex = xSemaphoreCreateBinary();
+	xSemaphoreGive(ctx.taskMutex);
 	soundQueue = xQueueCreate(8, sizeof(SoundEffect));
 }
 
@@ -48,26 +57,35 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
 	}
 }
 
-void main_task(__unused void *params) {
-	if (cyw43_arch_init()) {
-		printf("failed to initialise\n");
-		return;
-	}
-	while(1){
-		printf("REDBTN = %d", ctx.redButton.isPressed());
-		printf(" debounced = %d", ctx.redButton.debounced);
-		printf(" gpio_get = %d\n", gpio_get(RED_BTN));
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
-	}
 
-	cyw43_arch_deinit();
+void main_task(__unused void *params) {
+    if (cyw43_arch_init()) {
+        printf("failed to initialise\n");
+        return;
+    }
+    char buff[512];
+    while(1){
+        // printf("\nTask          State  Prio Stack Num\n");
+        // printf("***********************************\n");
+        // vTaskList(buff);
+        // printf("%s\n", buff);
+
+        // printf("Task            Abs Time    CPU%%\n");
+        // printf("***********************************\n");
+        // vTaskGetRunTimeStats(buff);
+        // printf("%s\n", buff);
+
+        vTaskDelay(1000/portTICK_PERIOD_MS);
+    }
+
+    cyw43_arch_deinit();
 }
 
 void tLoop(void *pvParameters) {
 	while (1) {
 		printf("[Supervisor] trying to get mutex\n");
 		if(xSemaphoreTake(ctx.taskMutex, 10000/portTICK_PERIOD_MS) == pdTRUE) {
-			printf("[Supervisor] took mutex");
+			printf("[Supervisor] took mutex\n");
 			if(ctx.currentTask && eTaskGetState(ctx.currentTask) == eRunning) {
 				vTaskDelete(ctx.currentTask);
 			}
@@ -120,7 +138,7 @@ int main() {
 	xTaskCreate(
 		main_task,
 		"TestMainThread",
-		configMINIMAL_STACK_SIZE,
+		configMINIMAL_STACK_SIZE * 4,
 		NULL,
 		tskIDLE_PRIORITY,
 		&task

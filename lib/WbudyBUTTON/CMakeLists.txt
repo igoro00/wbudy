@@ -12,6 +12,7 @@ add_library(WbudyBUTTON STATIC
 
 target_link_libraries(WbudyBUTTON PUBLIC
     pico_stdlib
+    hardware_timer
     FreeRTOS-Kernel
 )
 

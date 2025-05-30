@@ -71,7 +71,7 @@ void tPlay_Portal2(void *pvParameters) {
 }
 
 void tPlay_OK(void *pvParameters) {
-	printf("Playing OK sound\n");
+	printf("[Sound] Playing OK sound\n");
 	// 	"ok:d=4,o=6,b=320:e,e",
 	uint32_t bpm = 320; // beats per minute, beat is 1/4 note
 	uint32_t beat = (60000 / bpm); // ms per beat
@@ -80,6 +80,80 @@ void tPlay_OK(void *pvParameters) {
 	playNote(NOTE_E6, beat);
 	playNote(0, 0);
 	vTaskDelete(NULL);
+}
+
+void tPlay_Mario(void *pvParameters) {
+	// "mariotheme:"
+	// "d=4,o=5,b=125:a,8f.,16c,16d,16f,16p,f,16d,16c,16p,16f,16p,16f,16p,8c6,8a.,"
+	// "g,16c,a,8f.,16c,16d,16f,16p,f,16d,16c,16p,16f,16p,16a#,16a,16g,2f,16p,8a.,"
+	// "8f.,8c,8a.,f,16g#,16f,16c,16p,8g#.,2g,8a.,8f.,8c,8a.,f,16g#,16f,8c,2c6,"
+	// "p,p,p,p",
+
+
+
+	uint32_t bpm = 500; // beats per minute, beat is 1/4 note
+	uint32_t beat = (60000 / bpm); // ms per beat
+	while (1) {
+		playNote(NOTE_A5, beat * 4);
+		playNote(NOTE_F5, beat * 3);
+		playNote(NOTE_C5, beat);
+		playNote(NOTE_D5, beat);
+		playNote(NOTE_F5, beat);
+		playNote(0, beat);
+		playNote(NOTE_F5, beat * 4);
+		playNote(NOTE_D5, beat);
+		playNote(NOTE_C5, beat);
+		playNote(0, beat);
+		playNote(NOTE_F5, beat);
+		playNote(0, beat);
+		playNote(NOTE_F5, beat);
+		playNote(0, beat);
+		playNote(NOTE_C6, beat * 2);
+		playNote(NOTE_A5, beat * 3);
+		playNote(NOTE_G5, beat * 4);
+
+		playNote(NOTE_C5, beat * 2);
+		playNote(NOTE_A5, beat * 4);
+		playNote(NOTE_F5, beat * 3);
+		playNote(NOTE_C5, beat);
+		playNote(NOTE_D5, beat);
+		playNote(NOTE_F5, beat);
+		playNote(0, beat);
+		playNote(NOTE_F5, beat * 4);
+		playNote(NOTE_D5, beat);
+		playNote(NOTE_C5, beat);
+		playNote(0, beat);
+		playNote(NOTE_F5, beat);
+		playNote(0, beat);
+		playNote(NOTE_AS5, beat);
+		playNote(NOTE_A5, beat);
+		playNote(NOTE_G5, beat);
+		playNote(NOTE_F5, beat * 8);
+		playNote(0, beat * 4);
+
+		playNote(NOTE_A5, beat * 3);
+		playNote(NOTE_F5, beat * 3);
+		playNote(NOTE_C5, beat * 2);
+		playNote(NOTE_A5, beat * 3);
+		playNote(NOTE_F5, beat * 4);
+		playNote(NOTE_GS5, beat);
+		playNote(NOTE_F5, beat);
+		playNote(NOTE_C5, beat);
+		playNote(0, beat);
+		playNote(NOTE_GS5, beat * 3);
+		playNote(NOTE_G5, beat * 8);
+		playNote(NOTE_A5, beat * 3);
+		playNote(NOTE_F5, beat * 3);
+		playNote(NOTE_C5, beat * 2);
+		playNote(NOTE_A5, beat * 3);
+		playNote(NOTE_F5, beat * 4);
+		playNote(NOTE_GS5, beat);
+		playNote(NOTE_F5, beat);
+		playNote(NOTE_C5, beat * 2);
+		playNote(NOTE_C6, beat * 8);
+		
+		playNote(0, beat * 16);
+	}
 }
 
 TaskHandle_t tPlayer = NULL;
@@ -91,6 +165,19 @@ void playSound(SoundEffect s) {
 	}
 	
 	switch (s) {
+		case SoundEffect::STOP:
+			playNote(0, 0);
+			break;
+		case SoundEffect::MARIO_THEME:
+			xTaskCreate(
+				tPlay_Mario,
+				"tPlay_Mario",
+				configMINIMAL_STACK_SIZE,
+				NULL,
+				tskIDLE_PRIORITY + 5,
+				&tPlayer
+			);
+			break;
 		case SoundEffect::PORTAL2:
 			xTaskCreate(
 				tPlay_Portal2,

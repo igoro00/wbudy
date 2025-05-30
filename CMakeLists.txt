@@ -58,10 +58,6 @@ pico_enable_stdio_usb(wbudy 1)
 
 include(FreeRTOS_Kernel_import.cmake)
 
-# Add the standard library to the build
-target_link_libraries(wbudy
-        pico_stdlib)
-
 # Add the standard include files to the build
 target_include_directories(wbudy PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}/include
@@ -72,6 +68,7 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/WbudyLED)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/WbudyBUTTON)
 # Add any user requested libraries
 target_link_libraries(wbudy 
+    pico_stdlib
     hardware_spi
     hardware_i2c
     hardware_timer

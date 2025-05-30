@@ -50,16 +50,22 @@ void updateLobbyLCD(uint8_t settingPlayer = 0) {
 	// }
 }
 
-void btnPressed(uint32_t pin, bool pressed) {
-	if (pressed) {
-		playSound(SoundEffect::OK);
-	}
+void btnPressed(WbudyBUTTON *btn) {
+	printf("[sLobby] Button pressed on pin %d\n", btn->getPin());
+	playSound(SoundEffect::OK);
 }
 
 #define START_GAME_TIME 1000
 void sLobby(void *pvParameters) {
-	ctx.redButton.setCallback(btnPressed);
-
+	while(xSemaphoreTake(ctx.taskMutex, portMAX_DELAY) != pdTRUE) {
+		printf("[sLobby] Waiting for task mutex\n");
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+	}
+	printf("[sLobby] Took task mutex\n");
+	ctx.redButton.setOnPressed(btnPressed);
+	ctx.lcd.clear();
+	ctx.lcd.setCursor(0, 0);
+	ctx.lcd.print("Waiting for cards");
 	// if (ctx.game == nullptr) {
 	// 	ctx.game = std::make_unique<Game>(0, 0);
 	// } else {
@@ -73,6 +79,7 @@ void sLobby(void *pvParameters) {
 
 	// uint32_t lastRST = 0;
 	while (1) {
+
 	// 	if (rfidOn && !rfidShouldBe) {
 	// 		rfidOn = false;
 	// 		ctx.rfid->PCD_SoftPowerDown();
