@@ -12,7 +12,6 @@
 #include <lwip/init.h>
 #include <lwip/ip4_addr.h>
 
-
 #include "tSound.h"
 #include "states.h"
 
@@ -46,8 +45,6 @@ void setupPins(){
 	ctx.taskMutex = xSemaphoreCreateBinary();
 	xSemaphoreGive(ctx.taskMutex);
 	soundQueue = xQueueCreate(8, sizeof(SoundEffect));
-
-	portBYTE_ALIGNMENT
 }
 
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
@@ -58,6 +55,17 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
 		printf("Reboot the device\n\n");
 		sleep_ms(1000);
 	}
+}
+
+extern "C" void vApplicationIdleHook() {
+    // This function is called when the system is idle
+    // You can add your own code here, e.g., low-power mode
+    // For now, we just yield to allow other tasks to run
+    vTaskDelay(1 / portTICK_PERIOD_MS);
+}
+
+extern "C" void vApplicationPassiveIdleHook(void) {
+    // Optional: Add low-power code here
 }
 
 

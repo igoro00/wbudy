@@ -2,8 +2,8 @@
 
 #define configNUMBER_OF_CORES 2
 
-#include "FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2040/include/portmacro.h"
-#include "FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2040/include/rp2040_config.h"
+// #include "FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2040/include/portmacro.h"
+// #include "FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2040/include/rp2040_config.h"
 
 // This example uses a common include to avoid repetition
 #include "FreeRTOSConfig_examples_common.h"

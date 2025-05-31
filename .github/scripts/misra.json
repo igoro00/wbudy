@@ -3,5 +3,5 @@
     "args": [
       "--rule-texts=.github/scripts/misra_c_2023.txt"
     ],
-    "//": "--suppress-rules 17.3,21.12,"
+    "//": "--suppress-rules 17.3,21.12"
 }

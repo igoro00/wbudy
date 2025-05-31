@@ -20,5 +20,5 @@ target_link_libraries(WbudyBUTTON PUBLIC
 target_include_directories(WbudyBUTTON PUBLIC
     ${PROJECT_SOURCE_DIR}/../../include
     ${PROJECT_SOURCE_DIR}/include
-    ${FREERTOS_KERNEL_PATH}/include
+    ${PROJECT_SOURCE_DIR}/../../freertos/FreeRTOS-Kernel/include
 )

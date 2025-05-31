@@ -28,7 +28,7 @@
 
 // PICO_CONFIG: PICO_CONFIG_HEADER, Unquoted path to header include in place of the default pico/config.h which may be desirable for build systems which can't easily generate the config_autogen header, group=pico_base
 #ifdef PICO_CONFIG_HEADER
-#include __PICO_XSTRING(PICO_CONFIG_HEADER)
+#include __PICO_XSTRING( )
 #else
 #include "pico/config.h"
 #endif

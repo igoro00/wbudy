@@ -19,8 +19,8 @@ def parse_cppcheck_results(xml_file):
     root = tree.getroot()
 
     errors_by_severity = {sev: [] for sev in SEVERITIES}
-    error_found = False
 
+    error_count = 0
     for error in root.iter("error"):
         error_id = error.get("id")
         severity = error.get("severity")
@@ -41,7 +41,7 @@ def parse_cppcheck_results(xml_file):
         errors_by_severity[severity].append(
             (file, line, column, severity, msg, error_id)
         )
-        error_found = True
+        error_count += 1
 
     for severity in SEVERITIES:
         color = COLORS[severity]
@@ -50,8 +50,9 @@ def parse_cppcheck_results(xml_file):
             print(
                 f"{file}:{line}:{column}: {color}{sev}{reset}: {msg} [{error_id}]\n"
             )
+    print(f"\nTotal errors found: {error_count}")
 
-    if error_found:
+    if error_count>0:
         sys.exit(1)
 
 
