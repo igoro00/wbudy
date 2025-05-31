@@ -1,5 +1,10 @@
 #pragma once
 
+#define configNUMBER_OF_CORES 2
+
+#include "FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2040/include/portmacro.h"
+#include "FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2040/include/rp2040_config.h"
+
 // This example uses a common include to avoid repetition
 #include "FreeRTOSConfig_examples_common.h"
 
@@ -25,3 +30,7 @@ extern uint64_t time_us_64(void);						// "hardware/timer.h"
 
 #define RUN_TIME_STAT_time_us_64Divider 1000			// stat granularity is mS
 #define portGET_RUN_TIME_COUNTER_VALUE() (time_us_64()/RUN_TIME_STAT_time_us_64Divider)	// runtime counter in mS
+
+#define PICO_CYW43_ARCH_FREERTOS
+
+#define configUSE_PASSIVE_IDLE_HOOK 1

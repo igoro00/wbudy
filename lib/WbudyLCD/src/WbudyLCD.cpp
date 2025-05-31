@@ -85,6 +85,8 @@ void WbudyLCD::sendChar(char c) {
 void WbudyLCD::writeByte(uint8_t data) {
     i2c_hw_t* hw = _i2c->hw;
     hw->data_cmd = data;
+    #undef I2C_IC_RAW_INTR_STAT_TX_EMPTY_BITS
+    #define I2C_IC_RAW_INTR_STAT_TX_EMPTY_BITS   _u(0x00000010)
     while (!(hw->raw_intr_stat & I2C_IC_RAW_INTR_STAT_TX_EMPTY_BITS)) {
         tight_loop_contents();
     }

@@ -59,7 +59,7 @@ void WbudyBUTTON::setOnChanged(void (*cb)(WbudyBUTTON *btn, bool pressed)) {
 uint32_t WbudyBUTTON::msSincePress() { return ticksSincePress * portTICK_PERIOD_MS; }
 
 bool WbudyBUTTON::isPressed() {
-	if(!initDone) {
+	if(this->initDone == false) {
         return false;
     }
     return gpio_get(pin) == statePressed;

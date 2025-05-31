@@ -1,3 +1,6 @@
+#include <FreeRTOS.h>
+#include <task.h>
+
 #include <hardware/i2c.h>
 #include <hardware/spi.h>
 #include <hardware/timer.h>
@@ -9,8 +12,6 @@
 #include <lwip/init.h>
 #include <lwip/ip4_addr.h>
 
-#include <FreeRTOS.h>
-#include <task.h>
 
 #include "tSound.h"
 #include "states.h"
@@ -45,6 +46,8 @@ void setupPins(){
 	ctx.taskMutex = xSemaphoreCreateBinary();
 	xSemaphoreGive(ctx.taskMutex);
 	soundQueue = xQueueCreate(8, sizeof(SoundEffect));
+
+	portBYTE_ALIGNMENT
 }
 
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
@@ -63,7 +66,7 @@ void main_task(__unused void *params) {
         printf("failed to initialise\n");
         return;
     }
-    char buff[512];
+    // char buff[512];
     while(1){
         // printf("\nTask          State  Prio Stack Num\n");
         // printf("***********************************\n");

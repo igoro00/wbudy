@@ -1,7 +1,7 @@
 #pragma once
 
 #include <wchar.h>
-#include <stdint.h>
+#include <cstdint>
 
 static const wchar_t polishChars[] = {L'ć', L'ę', L'ł', L'ń', L'ó', L'ś', L'ź', L'ż'};
 
