@@ -33,8 +33,8 @@ project(wbudy C CXX ASM)
 
 set(PICO_CXX_ENABLE_RTTI 1)
 
-set(FREERTOS_KERNEL_PATH ${CMAKE_CURRENT_LIST_DIR}/freertos/FreeRTOS-Kernel)
-set(FREERTOS_PORT_PATH ${CMAKE_CURRENT_LIST_DIR}/freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2040)
+set(FREERTOS_KERNEL_PATH ${CMAKE_CURRENT_LIST_DIR}/lib/FreeRTOS-Kernel)
+set(FREERTOS_PORT_PATH ${CMAKE_CURRENT_LIST_DIR}/lib/FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2040)
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()

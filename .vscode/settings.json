@@ -68,7 +68,12 @@
         "wbudybuttoncpp": "cpp",
         "memory": "cpp",
         "type_traits": "cpp",
-        "cstddef": "cpp"
+        "cstddef": "cpp",
+        "pico.h": "c",
+        "addressmap.h": "c",
+        "platform.h": "c",
+        "version.h": "c",
+        "compiler.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled",
 }
