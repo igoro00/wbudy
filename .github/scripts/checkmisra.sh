@@ -36,8 +36,8 @@ function check {
         -U __riscv -U __sparc__ -U __SPU__ -U __MSDOS__ -U __i386__ -U GO32 \
         -U CYW43_NETUTILS -U LWIP_PERF -U MEMP_USE_CUSTOM_POOLS -U MEMP_USE_CUSTOM_POOLS -U PACK_STRUCT_USE_INCLUDES \
         -U __CUSTOM_FILE_IO__ -U PICO_CYW43_ARCH_HEADER\
-        --suppress=*:lib/FreeRTOS-Kernel/* \
-        --suppress=*:misra/* \
+        --suppress=*:lib/FreeRTOS-Kernel:* \
+        --suppress=*:misra:* \
         -v \
         2> build/cppcheck-result.xml
 }

@@ -17,7 +17,6 @@ public:
     void clear();
     void setCursor(uint8_t row, uint8_t col);
     void print(const char* str);
-    void printPolish(const wchar_t* str);
     void setBacklight(bool val);
 
 private:
@@ -35,6 +34,8 @@ private:
     void set_pin_function_i2c(uint pin);
     void set_pin_pullup(uint pin);
     void loadCustomChar(uint8_t location, const uint8_t charmap[8]);
-    char mapPolishChar(wchar_t c);
+    uint8_t utf8BytesCounter(uint8_t c);
+    const wchar_t walkUTF8String(const uint8_t** pStr);
+    uint8_t mapPolishChar(const uint8_t** pStr);
     bool _backlight = true;
 };

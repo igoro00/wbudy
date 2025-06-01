@@ -4,7 +4,7 @@
 
 class WbudyBUTTON {
     public:
-        WbudyBUTTON(uint32_t pin, bool statePressed = false, uint32_t debounce = 50, uint32_t longPress = 1000);
+        explicit WbudyBUTTON(uint32_t pin, bool statePressed = false, uint32_t debounce = 50, uint32_t longPress = 1000);
         WbudyBUTTON();
         void init(uint32_t pin, bool statePressed = false, uint32_t debounce = 50, uint32_t longPress = 1000);
 

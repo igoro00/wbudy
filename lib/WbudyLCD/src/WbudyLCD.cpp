@@ -100,12 +100,6 @@ void WbudyLCD::toggleEnable(uint8_t data) {
     sleep_us(100);
 }
 
-void WbudyLCD::print(const char* str) {
-    while (*str) {
-        sendChar(*str++);
-    }
-}
-
 void WbudyLCD::sendData(uint8_t data, uint8_t mode) {
     uint8_t bl = _backlight ? LCD_BACKLIGHT : 0;
     int8_t high = (data & 0xF0) | bl | mode;
@@ -124,14 +118,14 @@ void WbudyLCD::sleep_ms_custom(uint32_t ms) {
 void WbudyLCD::set_pin_function_i2c(uint pin) {
     // Funkcja I2C = 3 (FUNCSEL = 3)
     // Każdy pin ma swój rejestr CTRL pod adresem: IO_BANK0_BASE + 0x04 + 8*pin
-    volatile uint32_t* ctrl = (volatile uint32_t*)(IO_BANK0_BASE + 0x04 + 8 * pin);
+    volatile uint32_t* ctrl = reinterpret_cast<volatile uint32_t*>(IO_BANK0_BASE + 0x04 + 8 * pin);
     // Wyczyść bity 0-4 i ustaw na 3
     *ctrl = (*ctrl & ~0x1F) | 3;
     
 }
 
 void WbudyLCD::set_pin_pullup(uint pin) {
-    volatile uint32_t* pad = (volatile uint32_t*)(PADS_BANK0_BASE + 0x04 + 0x04 * pin);
+    volatile uint32_t* pad = reinterpret_cast<volatile uint32_t*>(PADS_BANK0_BASE + 0x04 + 0x04 * pin);
     uint32_t mask = (1 << 2) | (1 << 3); // tylko bity PDE i PUE
     uint32_t val = *pad;
     val = (val & ~mask) | (1 << 3);
@@ -146,21 +140,71 @@ void WbudyLCD::loadCustomChar(uint8_t location, const uint8_t charmap[8]) {
     }
 }
 
-char WbudyLCD::mapPolishChar(wchar_t c) {
-    static const wchar_t polishChars[] = {L'ć', L'ę', L'ł', L'ń', L'ó', L'ś', L'ź', L'ż'};
+uint8_t WbudyLCD::utf8BytesCounter(uint8_t c) {
+    if (!(c & 0b10000000)) {
+        return 1; // znak ASCII, 1 bajt
+    }
+    // sprawdzamy  1x......
+    if (!(c & 0b01000000)) { 
+        return 0; // błąd, znak UTF-8 nie może zaczynać się od 10xxxxxx
+    }
+
+    // sprawdzamy  11x.....
+    if (!(c & 0b00100000)) {
+        // wiemy że 110.....
+        return 2;
+    }
+
+    // sprawdzamy  111x....
+    if (!(c & 0b00010000)) {
+        //         1110....
+        return 3;
+    }
+
+    // sprawdzamy  1111x...
+    if (!(c & 0b00001000)) {
+        //         11110...
+        return 4;
+    } else {
+        return 0;
+    }
+}
+
+// https://www.johndcook.com/blog/2019/09/09/how-utf-8-works/
+const wchar_t WbudyLCD::walkUTF8String(const uint8_t** pStr) {
+    if (pStr == nullptr || *pStr == nullptr) return 0xFFFFFFFF;
+    uint8_t bytes = utf8BytesCounter(**pStr);
+    wchar_t out = 0;
+    // bits from header byte
+    uint8_t mask = (1<< (8 - bytes - 1)) - 1;
+    out += (**pStr & mask) << ((bytes-1) * 6); // przesuwamy w lewo o 6 bitów na każdy bajt
+    for (uint8_t i = 1; i < bytes; i++) {
+        (*pStr)++;
+        out += ((**pStr) & 0b00111111) << ((bytes - i - 1) * 6);
+    }
+    return out;
+}
+
+uint8_t WbudyLCD::mapPolishChar(const uint8_t** pStr) {
+    if (pStr == nullptr || *pStr == nullptr) return 0xFE;
+    const unsigned char* str = *pStr;
+    
+    const wchar_t c = walkUTF8String(pStr);
+    if (c >= 0xFFFF) return 0xFD; // błąd, niepoprawny UTF-8
+
     for (int i = 0; i < 8; i++) {
         if (c == polishChars[i]) return i;
     }
     return 0xFF; // nie znaleziono
 }
 
-void WbudyLCD::printPolish(const wchar_t* str) {
+void WbudyLCD::print(const char* str) {
     while (*str) {
-        char code = mapPolishChar(*str);
+        char code = mapPolishChar(reinterpret_cast<const uint8_t**>(&str));
         if (code < 8) {
             sendChar(code); // custom char
         } else if (*str < 128) {
-            sendChar((char)*str); // zwykły ASCII
+            sendChar(*str); // zwykły ASCII
         }
         str++;
     }

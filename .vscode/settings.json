@@ -73,7 +73,8 @@
         "addressmap.h": "c",
         "platform.h": "c",
         "version.h": "c",
-        "compiler.h": "c"
+        "compiler.h": "c",
+        "regex": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled",
 }
