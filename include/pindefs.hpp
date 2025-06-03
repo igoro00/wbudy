@@ -9,4 +9,5 @@
 #define RFID_SCK 2
 #define RFID_MISO 0
 #define RFID_MOSI 3
+#define RFID_IRQ 7
 #define SPEAKER 22
