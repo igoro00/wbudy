@@ -1,5 +1,4 @@
-#ifndef WBUDY_RFID_H
-#define WBUDY_RFID_H
+#pragma once
 
 #include <cstdint>
 #include "hardware/spi.h"
@@ -73,5 +72,3 @@ private:
     // Static pointer for IRQ handler
     static WbudyRFID* _instance;
 };
-
-#endif // WBUDY_RFID_H

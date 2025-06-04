@@ -1,5 +1,7 @@
+#pragma once
+
 #define YELLOW_BTN 17
-#define RED_BTN 16 
+#define RED_BTN 16
 #define GAME_RST_BTN 21
 #define LED_R 20
 #define LED_G 18
@@ -11,3 +13,5 @@
 #define RFID_MOSI 3
 #define RFID_IRQ 7
 #define SPEAKER 22
+#define LCD_SDA 4
+#define LCD_SCL 5

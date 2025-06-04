@@ -1,3 +1,6 @@
+#pragma once
+
+#include <cstdint>
 #include "Player.hpp"
 #include "cstdint"
 class PlayerDao {
