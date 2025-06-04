@@ -1,16 +1,39 @@
+
 #include "WbudyRFID.h"
 #include "pico/stdlib.h"
 #include <stdio.h>
 
 WbudyRFID* WbudyRFID::_instance = nullptr;
 
-WbudyRFID::WbudyRFID(spi_inst_t* spi, uint8_t csPin, uint8_t resetPin, uint8_t irqPin)
-    : _spi(spi), _cs_pin(csPin), _reset_pin(resetPin), _irq_pin(irqPin), _irq_fired(false), _callback(nullptr)
+WbudyRFID::WbudyRFID(spi_inst_t* spi, uint8_t csPin, uint8_t resetPin, uint8_t irqPin, uint8_t rfidMiso, uint8_t rfidSck, uint8_t rfidMosi)
 {
-    _instance = this;
+    
 }
 
-bool WbudyRFID::init() {
+WbudyRFID::WbudyRFID(){}
+
+bool WbudyRFID::init(spi_inst_t* spi, uint8_t csPin, uint8_t resetPin, uint8_t irqPin, uint8_t rfidMiso, uint8_t rfidSck, uint8_t rfidMosi) {
+    this->_spi = spi;
+    this->_cs_pin = csPin;
+    this->_reset_pin = resetPin;
+    this->_irq_pin = irqPin;
+    this->_rfid_miso = rfidMiso;
+    this->_rfid_sck = rfidSck;
+    this->_rfid_mosi = rfidMosi;
+    this->_callback = nullptr;
+    this->_instance = this;
+    this->taskIrqMutex = xSemaphoreCreateBinary();
+    xSemaphoreGive(this.taskIrqMutex);
+    gpio_set_irq_enabled_with_callback(_irq_pin, GPIO_IRQ_EDGE_FALL, true, &WbudyRFID::irqHandler);
+
+    spi_init(_spi, 1000000);
+    spi_set_format(_spi, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+    
+    gpio_set_function(_rfid_miso, GPIO_FUNC_SPI);
+    gpio_set_function(_rfid_sck, GPIO_FUNC_SPI);
+    gpio_set_function(_rfid_mosi, GPIO_FUNC_SPI);
+    // przeniesione z main
+
     gpio_init(_cs_pin);
     gpio_set_dir(_cs_pin, GPIO_OUT);
     gpio_put(_cs_pin, 1);
@@ -35,9 +58,7 @@ bool WbudyRFID::init() {
     writeRegister(ComIrqReg, 0x7F);
     writeRegister(DivIrqReg, 0x7F);
 
-    printf("MFRC522 Initialized with IRQ\n");
     uint8_t version = readRegister(0x37);
-    printf("MFRC522 Version: 0x%02X\n", version);
 
     return (version != 0 && version != 0xFF);
 }
@@ -68,49 +89,19 @@ uint32_t WbudyRFID::getUUID() {
 
 void WbudyRFID::attachInterrupt(CardCallback cb) {
     _callback = cb;
-    _irq_fired = false;
-    gpio_set_irq_enabled_with_callback(_irq_pin, GPIO_IRQ_EDGE_FALL, true, &WbudyRFID::irqHandler);
-    printf("IRQ attached to pin %d\n", _irq_pin);
 }
 
 void WbudyRFID::detachInterrupt() {
-    gpio_set_irq_enabled(_irq_pin, GPIO_IRQ_EDGE_FALL, false);
     _callback = nullptr;
 }
 
 void WbudyRFID::irqHandler(uint gpio, uint32_t events) {
     if (_instance && gpio == _instance->_irq_pin && (events & GPIO_IRQ_EDGE_FALL)) {
-        printf("IRQ triggered on pin %d\n", gpio);
-        _instance->handleIRQ();
+        BaseType_t xHigherPriorityTaskWoken = pdTRUE;
+        xSemaphoreGiveFromISR(_instance->taskIrqMutex, &xHigherPriorityTaskWoken);
     }
 }
 
-void WbudyRFID::handleIRQ() {
-    uint8_t irqFlags = readRegister(ComIrqReg);
-    printf("IRQ Flags: 0x%02X\n", irqFlags);
-    
-    if (irqFlags & 0x20) { // RxIRq - odebrano dane
-        printf("RxIRq detected - card response received\n");
-        uint8_t fifoLevel = readRegister(FIFOLevelReg);
-        printf("FIFO Level: %d\n", fifoLevel);
-        
-        if (fifoLevel > 0 && _callback) {
-            uint32_t uuid = getUUID();
-            if (uuid != 0) {
-                _callback(uuid);
-            }
-        }
-    }
-    
-    if (irqFlags & 0x10) { // IdleIRq
-        printf("IdleIRq detected - command finished\n");
-    }
-    
-    // Wyczyść flagi przerwań
-    writeRegister(ComIrqReg, 0x7F);
-}
-
-// Pozostałe metody bez zmian...
 uint8_t WbudyRFID::readRegister(uint8_t reg) {
     uint8_t value;
     gpio_put(_cs_pin, 0);
@@ -198,4 +189,36 @@ bool WbudyRFID::readCardSerial() {
     uint8_t bcc = readRegister(FIFODataReg);
     uint8_t calculated_bcc = _uid[0] ^ _uid[1] ^ _uid[2] ^ _uid[3];
     return (bcc == calculated_bcc);
+}
+
+void WbudyRFID::tPing(void *pvParameters) {
+    WbudyRFID *self = static_cast<WbudyRFID*>(pvParameters);
+
+    while (1) {
+        rfid.startCardDetection();
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+    }
+}
+
+void WbudyRFID::tReadCard(void *pvParameters) {
+    WbudyRFID *self = static_cast<WbudyRFID*>(pvParameters);
+
+    while (1) {
+        if (xSemaphoreTake(this.taskIrqMutex, portMAX_DELAY) == pdTRUE) {
+            uint8_t irqFlags = readRegister(ComIrqReg);
+    
+            if (irqFlags & 0x20) { // RxIRq - odebrano dane
+                uint8_t fifoLevel = readRegister(FIFOLevelReg);
+                
+                if (fifoLevel > 0 && _callback) {
+                    uint32_t uuid = self->getUUID();
+                    if (_callback != NULL) {
+                        _callback(uuid);   
+                    }
+                }
+            }
+            // Wyczyść flagi przerwań
+            writeRegister(ComIrqReg, 0x7F);
+        } 
+    }
 }

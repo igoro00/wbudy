@@ -1,4 +1,7 @@
 #pragma once
+#include <FreeRTOS.h>
+#include <task.h>
+#include <semphr.h>
 
 #include <cstdint>
 #include "hardware/spi.h"
@@ -8,7 +11,11 @@ class WbudyRFID {
 public:
     using CardCallback = void(*)(uint32_t);
 
-    WbudyRFID(spi_inst_t* spi, uint8_t csPin, uint8_t resetPin, uint8_t irqPin);
+
+    WbudyRFID(spi_inst_t* spi, uint8_t csPin, uint8_t resetPin, uint8_t irqPin, uint8_t rfidMiso, uint8_t rfidSck, uint8_t rfidMosi);
+
+    WbudyRFID();
+    void init(spi_inst_t* spi, uint8_t csPin, uint8_t resetPin, uint8_t irqPin, uint8_t rfidMiso, uint8_t rfidSck, uint8_t rfidMosi);
 
     bool init();
     uint32_t getUUID();
@@ -39,9 +46,13 @@ private:
     uint8_t _cs_pin;
     uint8_t _reset_pin;
     uint8_t _irq_pin;
+    uint8_t _rfid_miso;
+    uint8_t _rfid_sck;
+    uint8_t _rfid_mosi;
     uint8_t _uid[4];
     volatile bool _irq_fired;
     CardCallback _callback;
+    SemaphoreHandle_t taskMutex;
 
     // MFRC522 Register addresses
     static constexpr uint8_t CommandReg = 0x01;
@@ -71,4 +82,5 @@ private:
 
     // Static pointer for IRQ handler
     static WbudyRFID* _instance;
+
 };
