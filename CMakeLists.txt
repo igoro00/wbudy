@@ -27,6 +27,7 @@ endif()
 set(PICO_BOARD pico_w CACHE STRING "Board type")
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
+set(PICO_FLASH_SIZE 0x1F8000) # 2MB - 32K for game data
 include(pico_sdk_import.cmake)
 
 project(wbudy C CXX ASM)
@@ -47,6 +48,7 @@ add_executable(wbudy
     src/sMain.cpp
     src/sLobby.cpp
     src/sGame.cpp
+    src/Game.cpp
 )
 
 pico_set_program_name(wbudy "wbudy")
@@ -57,6 +59,7 @@ pico_enable_stdio_uart(wbudy 0)
 pico_enable_stdio_usb(wbudy 1)
 
 include(FreeRTOS_Kernel_import.cmake)
+
 
 # Add the standard include files to the build
 target_include_directories(wbudy PUBLIC

@@ -56,7 +56,7 @@ void WbudyBUTTON::setOnChanged(void (*cb)(WbudyBUTTON *btn, bool pressed)) {
     this->onChanged = cb;
 }
 
-uint32_t WbudyBUTTON::msSincePress() { return ticksSincePress * portTICK_PERIOD_MS; }
+uint32_t WbudyBUTTON::msSinceChange() { return ticksSincePress * portTICK_PERIOD_MS; }
 
 bool WbudyBUTTON::isPressed() {
 	if(this->initDone == false) {
@@ -83,7 +83,7 @@ void WbudyBUTTON::tButton(void *pvParameters) {
         self->ticksSincePress = (xTaskGetTickCount() - lastChangeTime);
 
         // If state is stable for debounce period
-        if (self->msSincePress() >= self->debounce) {
+        if (self->msSinceChange() >= self->debounce) {
             if (lastStableState != currentState) {
                 lastStableState = currentState;
                 self->debounced = currentState;
@@ -99,7 +99,7 @@ void WbudyBUTTON::tButton(void *pvParameters) {
             }
         }
         if (currentState && // w tej chwili naciśnięty
-            self->onLongPressed && self->msSincePress() >= self->longPress && // naciśnięty od longPress ms
+            self->onLongPressed && self->msSinceChange() >= self->longPress && // naciśnięty od longPress ms
             self->ticksSinceOnLongPress < lastChangeTime // nie wywołano jeszcze cb w tym naciśnięciu
         ) {
             self->ticksSinceOnLongPress = lastChangeTime;

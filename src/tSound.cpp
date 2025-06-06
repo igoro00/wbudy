@@ -6,7 +6,7 @@
 #include <task.h>
 #include <semphr.h>
 
-#include "pindefs.hpp"
+#include "pindefs.h"
 #include "Context.h"
 #include "tSound.h"
 

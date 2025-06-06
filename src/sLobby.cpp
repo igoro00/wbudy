@@ -1,11 +1,12 @@
 #include <hardware/gpio.h>
 #include <stdio.h>
+#include <math.h>
 
 #include <FreeRTOS.h>
 #include <task.h>
 #include <queue.h>
 
-#include "pindefs.hpp"
+#include "pindefs.h"
 #include "Context.h"
 
 #include "states.h"
@@ -55,14 +56,30 @@ void btnPressed(WbudyBUTTON *btn) {
 	playSound(SoundEffect::OK);
 }
 
+void goToGame(WbudyBUTTON *btn) {
+	printf("[sLobby] Going to game\n");
+	ctx.redButton.setOnPressed(NULL);
+	ctx.yellowButton.setOnPressed(NULL);
+	ctx.resetButton.setOnPressed(NULL);
+	ctx.rgb.setRGB(0, 0, 0);
+	ctx.gameState = GameState::GAME;
+	xSemaphoreGive(ctx.taskMutex);
+	printf("[sLobby] Gave task mutex\n");
+}
+
 #define START_GAME_TIME 1000
 void sLobby(void *pvParameters) {
 	while(xSemaphoreTake(ctx.taskMutex, portMAX_DELAY) != pdTRUE) {
 		printf("[sLobby] Waiting for task mutex\n");
 		vTaskDelay(10 / portTICK_PERIOD_MS);
 	}
+	while(ctx.resetButton.isPressed()) {
+		printf("[sLobby] Waiting for reset button to be released\n");
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+	}
 	printf("[sLobby] Took task mutex\n");
 	ctx.redButton.setOnPressed(btnPressed);
+	ctx.resetButton.setOnLongPressed(goToGame);
 	ctx.lcd.clear();
 	ctx.lcd.setCursor(0, 0);
 	ctx.lcd.print("Waiting for cards");
@@ -79,6 +96,15 @@ void sLobby(void *pvParameters) {
 
 	// uint32_t lastRST = 0;
 	while (1) {
+		if (ctx.resetButton.isPressed()) {
+
+			float x = (float)ctx.resetButton.msSinceChange() / START_GAME_TIME;
+			static const float k = 4.0;
+			float val = 255.0 * (exp(k * x) - 1.0) / (exp(k) - 1.0);
+			ctx.rgb.setRGB((uint8_t)val,0,0);
+		} else {
+			ctx.rgb.setRGB(0, 0, 0);
+		}
 
 	// 	if (rfidOn && !rfidShouldBe) {
 	// 		rfidOn = false;

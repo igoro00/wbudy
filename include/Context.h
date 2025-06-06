@@ -7,10 +7,11 @@
 #include <task.h>
 #include <semphr.h>
 
-#include "Game.hpp"
+#include "Game.h"
 #include "WbudyBUTTON.h"
 #include "WbudyRGB.h"
 #include "WbudyLCD.h"
+
 enum class GameState {
 	MAIN,
 	LOBBY,
@@ -29,13 +30,8 @@ struct Context {
 	WbudyLCD lcd;
 
 	uint32_t cardUID;
-	std::unique_ptr<Game> game;
-	// LiquidCrystal_I2C *lcd;
-	// MFRC522 *rfid;
 	
-	// Lazy loaded players list
-	// Other parts of the program will first try to 
-	std::unique_ptr<std::vector<Player>> players;
+	NVMem nvmem;
 };
 
 extern Context ctx;

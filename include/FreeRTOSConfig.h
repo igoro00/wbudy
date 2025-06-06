@@ -33,4 +33,5 @@ extern uint64_t time_us_64(void);						// "hardware/timer.h"
 
 #define PICO_CYW43_ARCH_FREERTOS
 
+#undef configUSE_PASSIVE_IDLE_HOOK
 #define configUSE_PASSIVE_IDLE_HOOK 1

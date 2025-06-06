@@ -16,7 +16,7 @@
 #include "states.h"
 
 #include "Context.h"
-#include "pindefs.hpp"
+#include "pindefs.h"
 
 Context ctx;
 QueueHandle_t soundQueue;
@@ -29,7 +29,7 @@ uint32_t micros32(void) {
 }
 
 void setupPins(){
-	ctx.rgb.init(LED_R, LED_G, LED_B);
+	ctx.rgb.init(LED_R, LED_G, LED_B, true);
 	ctx.lcd.init(
 		i2c0,
 		0x27,
@@ -97,7 +97,7 @@ void tLoop(void *pvParameters) {
 		printf("[Supervisor] trying to get mutex\n");
 		if(xSemaphoreTake(ctx.taskMutex, 10000/portTICK_PERIOD_MS) == pdTRUE) {
 			printf("[Supervisor] took mutex\n");
-			if(ctx.currentTask && eTaskGetState(ctx.currentTask) == eRunning) {
+			if(ctx.currentTask) {
 				vTaskDelete(ctx.currentTask);
 			}
 			ctx.currentTask = NULL;
