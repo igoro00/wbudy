@@ -39,18 +39,4 @@ jobs:
       
       - name: Run CppCheck
         shell: bash
-        run: |
-          cppcheck \
-            --enable=all \
-            --addon=$GITHUB_WORKSPACE/.github/scripts/misra.json \
-            --force \
-            --inline-suppr \
-            --xml \
-            $GITHUB_WORKSPACE/lib \
-            $GITHUB_WORKSPACE/src \
-            2> $GITHUB_WORKSPACE/cppcheck-result.xml
-      
-      - name: Parse CppCheck results
-        shell: bash
-        run: |
-          python $GITHUB_WORKSPACE/.github/scripts/cppcheck_parser.py $GITHUB_WORKSPACE/cppcheck-result.xml
+        run: $GITHUB_WORKSPACE/.github/scripts/checkmisra.sh

@@ -1,2 +1,0 @@
-void myPanic();
-void bookkeeping();
