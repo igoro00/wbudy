@@ -41,6 +41,26 @@ void setupPins(){
 	ctx.resetButton.init(GAME_RST_BTN, false, 50);
 	initSound();
 
+	ctx.rfid.init(
+		spi0,
+		RFID_CS,
+		RFID_RST,
+		RFID_IRQ,
+		RFID_MISO,
+		RFID_SCK,
+		RFID_MOSI
+	);
+
+	ctx.rfid.attachInterrupt([](uint32_t uid) {
+		printf("[RFID] Card detected with UID: %08X\n", uid);
+		ctx.cardUID = uid;
+		if (ctx.gameState == GameState::LOBBY || ctx.gameState == GameState::GAME) {
+			if (ctx.game) {
+				ctx.game->setPlayer(true, uid);
+			}
+		}
+	});
+
 	ctx.gameState = GameState::MAIN;
 	ctx.taskMutex = xSemaphoreCreateBinary();
 	xSemaphoreGive(ctx.taskMutex);
@@ -163,6 +183,25 @@ int main() {
 		tskIDLE_PRIORITY + 1,
 		NULL
 	);
+
+	xTaskCreate(
+        WbudyRFID::tPing,
+        "tPing",
+        2048,
+        &ctx.rfid,
+        tskIDLE_PRIORITY + 2,
+        NULL
+    );
+
+	xTaskCreate(
+		WbudyRFID::tReadCard,
+		"tReadCard",
+		2048,
+		&ctx.rfid,
+		tskIDLE_PRIORITY + 2,
+		NULL
+	);
+
 	vTaskStartScheduler();
 
 	while (true) {

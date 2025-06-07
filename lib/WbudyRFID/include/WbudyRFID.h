@@ -11,11 +11,10 @@ class WbudyRFID {
 public:
     using CardCallback = void(*)(uint32_t);
 
-
     WbudyRFID(spi_inst_t* spi, uint8_t csPin, uint8_t resetPin, uint8_t irqPin, uint8_t rfidMiso, uint8_t rfidSck, uint8_t rfidMosi);
 
     WbudyRFID();
-    void init(spi_inst_t* spi, uint8_t csPin, uint8_t resetPin, uint8_t irqPin, uint8_t rfidMiso, uint8_t rfidSck, uint8_t rfidMosi);
+    bool init(spi_inst_t* spi, uint8_t csPin, uint8_t resetPin, uint8_t irqPin, uint8_t rfidMiso, uint8_t rfidSck, uint8_t rfidMosi);
 
     bool init();
     uint32_t getUUID();
@@ -25,6 +24,9 @@ public:
     // Obsługa przerwań
     void attachInterrupt(CardCallback cb);
     void detachInterrupt();
+
+    static void tPing(void *pvParameters);
+    static void tReadCard(void *pvParameters);
 
 private:
     // SPI communication methods
@@ -52,21 +54,21 @@ private:
     uint8_t _uid[4];
     volatile bool _irq_fired;
     CardCallback _callback;
-    SemaphoreHandle_t taskMutex;
+    SemaphoreHandle_t taskIrqMutex;
 
     // MFRC522 Register addresses
-    static constexpr uint8_t CommandReg = 0x01;
-    static constexpr uint8_t ComIEnReg = 0x02;
-    static constexpr uint8_t DivIEnReg = 0x03;
-    static constexpr uint8_t ComIrqReg = 0x04;
-    static constexpr uint8_t DivIrqReg = 0x05;
-    static constexpr uint8_t ErrorReg = 0x06;
-    static constexpr uint8_t Status1Reg = 0x07;
-    static constexpr uint8_t Status2Reg = 0x08;
-    static constexpr uint8_t FIFODataReg = 0x09;
-    static constexpr uint8_t FIFOLevelReg = 0x0A;
-    static constexpr uint8_t ControlReg = 0x0C;
-    static constexpr uint8_t BitFramingReg = 0x0D;
+    static constexpr uint8_t CommandReg = 0x01; // Sterowanie komendami
+    static constexpr uint8_t ComIEnReg = 0x02; // Włączanie przerwań komunikacyjnych
+    static constexpr uint8_t DivIEnReg = 0x03; // Włączanie przerwań dzielnika
+    static constexpr uint8_t ComIrqReg = 0x04; // Flagi przerwań komunikacyjnych
+    static constexpr uint8_t DivIrqReg = 0x05; // Flagi przerwań dzielnika
+    static constexpr uint8_t ErrorReg = 0x06; // Flagi błędów
+    static constexpr uint8_t Status1Reg = 0x07; // Status komunikacji
+    static constexpr uint8_t Status2Reg = 0x08; // Status odbiornika i transmitera
+    static constexpr uint8_t FIFODataReg = 0x09; // Dane wejściowe/wyjściowe FIFO
+    static constexpr uint8_t FIFOLevelReg = 0x0A; // Poziom zapełnienia FIFO
+    static constexpr uint8_t ControlReg = 0x0C; // Różne ustawienia sterujące
+    static constexpr uint8_t BitFramingReg = 0x0D; // Orientacja bitów dla transmisji i odbioru
     static constexpr uint8_t ModeReg = 0x11;
     static constexpr uint8_t TxControlReg = 0x14;
     static constexpr uint8_t TxASKReg = 0x15;
