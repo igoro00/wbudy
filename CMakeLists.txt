@@ -58,6 +58,13 @@ add_executable(wbudy
     src/sGame.cpp
     src/Game.cpp
     src/rtoshooks.cpp
+    src/commands/cat.cpp
+    src/commands/top.cpp
+    src/commands/hello.cpp
+    src/commands/rm.cpp
+    src/commands/clear.cpp
+    src/commands/load.cpp
+    src/commands/save.cpp
 )
 
 pico_set_program_name(wbudy "wbudy")
