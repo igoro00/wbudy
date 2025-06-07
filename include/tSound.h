@@ -96,7 +96,6 @@
 // 	(const char *)0,
 // 	// RTTTL sound effects
 //     "setup done:d=4,o=6,b=400:a4,b4",
-// 	"press:d=4,o=6,b=400:c,g",
 // 	"lost:d=4,o=3,b=120:d,c,g2",
 // 	"win:d=4,o=5,b=320:c,c,c,g.",
 // };
@@ -107,19 +106,19 @@ enum class SoundEffect {
     MARIO_THEME,
     PORTAL2,
     OK,
-    // PRESS,
-    // LOST,
-    // WIN
+    PRESS,
+    LOST,
+    WIN
 };
 
 extern QueueHandle_t soundQueue;
 
 void initSound();
 // void tPlay_SetupDone(void *pvParameters);
-// void tPlay_MarioTheme(void *pvParameters);
+void tPlay_MarioTheme(void *pvParameters);
 void tPlay_Portal2(void *pvParameters);
 void tPlay_OK(void *pvParameters);
-// void tPlay_Press(void *pvParameters);
-// void tPlay_Lost(void *pvParameters);
-// void tPlay_Win(void *pvParameters);
+void tPlay_Press(void *pvParameters);
+void tPlay_Lost(void *pvParameters);
+void tPlay_Win(void *pvParameters);
 void playSound(SoundEffect s);

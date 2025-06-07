@@ -1,4 +1,5 @@
 #include <FreeRTOS.h>
+#include <semphr.h>
 #include <task.h>
 #include <stdio.h>
 #include <hardware/gpio.h>
@@ -9,6 +10,7 @@
 #include "pindefs.h"
 
 #include "states.h"
+#include "tSound.h"
 
 uint32_t pButtons[2] = {0, 0};
 bool canPress = false;
@@ -72,6 +74,7 @@ void sGame(void *pvParameters) {
         printf("[sGame] Waiting for task mutex\n");
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
+	printf("[sGame] Took task mutex\n");
 	Game* game = getNewGame();
 	gpio_set_irq_enabled_with_callback(
 		YELLOW_BTN,
@@ -103,15 +106,13 @@ void sGame(void *pvParameters) {
 		ctx.lcd.clear();
 	}
 	
-	for (int i = 0; i < 5; i++) {
+	for (int i = 0; i < 2; i++) {
 		pButtons[0] = 0;
 		pButtons[1] = 0;
 		falseStart = 0;
 		canPress = false;
 		long player = get_rand_32()%2;
-	// 	PlaySound(SoundEffect::STOP);
-	// 	PlaySound(SoundEffect::GAME_WAITING);
-	// 	PlaySound(SoundEffect::LOOP_LAST);
+		playSound(SoundEffect::PORTAL2);
 		ctx.lcd.clear();
 		ctx.lcd.setCursor(0, 0);
 		ctx.lcd.print("Wait for light..");
@@ -119,8 +120,7 @@ void sGame(void *pvParameters) {
 		 
 		vTaskDelay(randint(500, 5000) / portTICK_PERIOD_MS);
 		canPress = true;
-	// PlaySound(SoundEffect::STOP);
-	// 	PlaySound(SoundEffect::PRESS);
+		playSound(SoundEffect::PRESS);
 		ctx.lcd.clear();
 		ctx.lcd.setCursor(0, 0);
 		ctx.lcd.print("Press the button");
@@ -139,7 +139,7 @@ void sGame(void *pvParameters) {
 
 	// 		// False start means the round is invalid
 	// 		if (falseStart) {
-	// 			PlaySound(SoundEffect::LOST);
+	// 			playSound(SoundEffect::LOST);
 	// 			ctx.lcd.clear();
 	// 			ctx.lcd.setCursor(0, 0);
 	// 			printPolishMsg(*lcd, ctx.game->getPlayer(falseStart-1).name);
@@ -154,7 +154,7 @@ void sGame(void *pvParameters) {
 	// 			pButtons[1] ? pButtons[1]-ledStarted+1 : 0
 	// 		);
 	// 		if (player == faster) {
-	// 			PlaySound(SoundEffect::WIN);
+	// 			playSound(SoundEffect::WIN);
 	// 			ctx.lcd.clear();
 	// 			ctx.lcd.setCursor(0, 0);
 	// 			printPolishMsg(*lcd, ctx.game->getPlayer(player).name);
@@ -164,7 +164,7 @@ void sGame(void *pvParameters) {
 	// 			ctx.lcd.print("ms");
 	// 			break;
 	// 		} else {
-	// 			PlaySound(SoundEffect::LOST);
+	// 			playSound(SoundEffect::LOST);
 	// 			ctx.lcd.clear();
 	// 			ctx.lcd.setCursor(0, 0);
 	// 			printPolishMsg(*lcd, ctx.game->getPlayer(faster).name);
@@ -182,6 +182,7 @@ void sGame(void *pvParameters) {
 	// 	delay(2000);
 		ctx.lcd.clear();
 	}
+
 	gpio_set_irq_enabled(
 		YELLOW_BTN,
 		GPIO_IRQ_EDGE_FALL,
@@ -194,6 +195,9 @@ void sGame(void *pvParameters) {
 	);
 	ctx.rgb.setRGB(0, 0, 0);
 	saveGames();
+	printf("[sGame] Saved games to flash\n");
 	ctx.gameState = GameState::END;
 	xSemaphoreGive(ctx.taskMutex);
+	printf("[sGame] Gave task mutex\n");
+	vTaskDelay(portMAX_DELAY); // waiting for supervisor to delete me
 }

@@ -103,16 +103,16 @@
 
 #if FREE_RTOS_KERNEL_SMP // set by the RP2xxx SMP port of FreeRTOS
 /* SMP port only */
-#ifndef configNUMBER_OF_CORES
-#define configNUMBER_OF_CORES                   2
-#endif
-#define configNUM_CORES                         configNUMBER_OF_CORES
-#define configTICK_CORE                         0
-#define configRUN_MULTIPLE_PRIORITIES           1
-#if configNUMBER_OF_CORES > 1
-#define configUSE_CORE_AFFINITY                 1
-#endif
-#define configUSE_PASSIVE_IDLE_HOOK             0
+    #ifndef configNUMBER_OF_CORES
+        #define configNUMBER_OF_CORES                   2
+    #endif
+    #define configNUM_CORES                         configNUMBER_OF_CORES
+    #define configTICK_CORE                         0
+    #define configRUN_MULTIPLE_PRIORITIES           1
+    #if configNUMBER_OF_CORES > 1
+        #define configUSE_CORE_AFFINITY                 1
+    #endif
+    #define configUSE_PASSIVE_IDLE_HOOK             0
 #endif
 
 /* RP2040 specific */
