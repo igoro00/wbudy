@@ -16,19 +16,7 @@ uint32_t pButtons[2] = {0, 0};
 bool canPress = false;
 
 // see: Game.h/Round.player
-uint8_t falseStart = 0;
-
-uint8_t UIDtoHUE(uint32_t input) {
-	uint8_t hash = 0;
-
-	// Process each byte of the input
-	for (int i = 0; i < 4; ++i) {
-		hash ^= (input >> (i * 8)) & 0xFF; // XOR each byte into hash
-		hash = (hash << 3) | (hash >> 5);  // Rotate left by 3 bits
-	}
-
-	return hash;
-}
+uint8_t falseStart = 0x0;
 
 uint32_t randint(uint32_t min, uint32_t max) {
 	if (min >= max) {
@@ -51,22 +39,22 @@ void gameButtonISR(uint pin, uint32_t events) {
 // false if player 0 is faster
 // true if player 1 is faster
 // call only if at least one button was pressed
-bool fasterPlayer(){
+uint8_t fasterPlayer(){
 	if(pButtons[0] && pButtons[1]){
-		return pButtons[0] >= pButtons[1];
+		return 0;
 	}
 	// only one button pressed
 	if(pButtons[0]){
-		return 0; // the other one never pressed
+		return 1; // the other one never pressed
 	}
 	if(pButtons[1]){
-		return 1; // the other one never pressed
+		return 2; // the other one never pressed
 	}
 	// no button pressed
 	// should never happen 
 	// because this function is not called 
 	// when no button is pressed
-	return false; 
+	return 0; 
 }
 
 void sGame(void *pvParameters) {
@@ -75,7 +63,7 @@ void sGame(void *pvParameters) {
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 	printf("[sGame] Took task mutex\n");
-	Game* game = getNewGame();
+	Game& game = ctx.nvmem.games[ctx.nvmem.currentGame];
 	gpio_set_irq_enabled_with_callback(
 		YELLOW_BTN,
 		GPIO_IRQ_EDGE_FALL,
@@ -106,17 +94,16 @@ void sGame(void *pvParameters) {
 		ctx.lcd.clear();
 	}
 	
-	for (int i = 0; i < 2; i++) {
+	for (int i = 0; i < sizeof(((Game*)0)->rounds)/sizeof(Round); i++) {
 		pButtons[0] = 0;
 		pButtons[1] = 0;
 		falseStart = 0;
 		canPress = false;
-		long player = get_rand_32()%2;
+		game.rounds[i].player = (get_rand_32()%2)+1;
 		playSound(SoundEffect::PORTAL2);
 		ctx.lcd.clear();
 		ctx.lcd.setCursor(0, 0);
 		ctx.lcd.print("Wait for light..");
-
 		 
 		vTaskDelay(randint(500, 5000) / portTICK_PERIOD_MS);
 		canPress = true;
@@ -125,61 +112,63 @@ void sGame(void *pvParameters) {
 		ctx.lcd.setCursor(0, 0);
 		ctx.lcd.print("Press the button");
 		ctx.rgb.setHSL(
-			0,
+			UIDtoHUE(game.players[game.rounds[i].player-1]),
 			255,
 			128
 		);
 		uint32_t ledStarted = time_us_32();
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
-	// 	while (micros() - ledStarted < 5'000'000) {
-	// 		bookkeeping();
-	// 		if (!pButtons[0] && !pButtons[1]) {
-	// 			continue;
-	// 		}
+		while (time_us_32() - ledStarted < 5'000'000) {
+			vTaskDelay(10 / portTICK_PERIOD_MS);
+			if (!pButtons[0] && !pButtons[1]) {
+				continue;
+			}
+			game.rounds[i].p1_us = pButtons[0] ? pButtons[0] - ledStarted : 0;
+			game.rounds[i].p2_us = pButtons[1] ? pButtons[1] - ledStarted : 0;
 
-	// 		// False start means the round is invalid
-	// 		if (falseStart) {
-	// 			playSound(SoundEffect::LOST);
-	// 			ctx.lcd.clear();
-	// 			ctx.lcd.setCursor(0, 0);
-	// 			printPolishMsg(*lcd, ctx.game->getPlayer(falseStart-1).name);
-	// 			ctx.lcd.setCursor(1, 0);
-	// 			ctx.lcd.print("false started...");
-	// 			break;
-	// 		}
-	// 		bool faster = fasterPlayer();
-	// 		ctx.game->addRound(
-	// 			player==0,
-	// 			pButtons[0] ? pButtons[0]-ledStarted+1 : 0,
-	// 			pButtons[1] ? pButtons[1]-ledStarted+1 : 0
-	// 		);
-	// 		if (player == faster) {
-	// 			playSound(SoundEffect::WIN);
-	// 			ctx.lcd.clear();
-	// 			ctx.lcd.setCursor(0, 0);
-	// 			printPolishMsg(*lcd, ctx.game->getPlayer(player).name);
-	// 			ctx.lcd.print(" won!");
-	// 			ctx.lcd.setCursor(1, 0);
-	// 			ctx.lcd.print((pButtons[player]-ledStarted)/1000);
-	// 			ctx.lcd.print("ms");
-	// 			break;
-	// 		} else {
-	// 			playSound(SoundEffect::LOST);
-	// 			ctx.lcd.clear();
-	// 			ctx.lcd.setCursor(0, 0);
-	// 			printPolishMsg(*lcd, ctx.game->getPlayer(faster).name);
-	// 			ctx.lcd.setCursor(1, 0);
-	// 			ctx.lcd.print("lost...");
-	// 			break;
-	// 		}
-	// 	}
-	// 	if ((!pButtons[0] && !pButtons[1])) {
-	// 		ctx.lcd.clear();
-	// 		ctx.lcd.setCursor(0, 0);
-	// 		ctx.lcd.print("Timeout!");
-	// 	}
+			// False start means the round is invalid
+			if (falseStart) {
+				playSound(SoundEffect::LOST);
+				ctx.lcd.clear();
+				ctx.lcd.setCursor(0, 0);
+				ctx.lcd.print(getPlayerName(game.players[falseStart-1]));
+				ctx.lcd.setCursor(1, 0);
+				ctx.lcd.print("false started...");
+				break;
+			}
+			bool faster = fasterPlayer();
+			if(faster == 0) {
+				playSound(SoundEffect::LOST);
+				ctx.lcd.clear();
+				ctx.lcd.setCursor(0, 0);
+				ctx.lcd.print("TIE!");
+				break;
+			}
+			if (game.rounds[i].player == faster) {
+				playSound(SoundEffect::WIN);
+				ctx.lcd.clear();
+				ctx.lcd.setCursor(0, 0);
+				ctx.lcd.printf("%s won!",getPlayerName(game.players[faster-1]));
+				ctx.lcd.setCursor(1, 0);
+				ctx.lcd.printf("%dms",(pButtons[faster-1]-ledStarted)/1000);
+				break;
+			} else {
+				playSound(SoundEffect::LOST);
+				ctx.lcd.clear();
+				ctx.lcd.setCursor(0, 0);
+				ctx.lcd.print(getPlayerName(game.players[faster-1]));
+				ctx.lcd.setCursor(1, 0);
+				ctx.lcd.print("lost...");
+				break;
+			}
+		}
+		if ((!pButtons[0] && !pButtons[1])) {
+			ctx.lcd.clear();
+			ctx.lcd.setCursor(0, 0);
+			ctx.lcd.print("Timeout!");
+		}
 		ctx.rgb.setRGB(0);
-	// 	delay(2000);
+		vTaskDelay(2000 / portTICK_PERIOD_MS);
 		ctx.lcd.clear();
 	}
 

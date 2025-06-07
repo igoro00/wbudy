@@ -109,3 +109,10 @@ void WbudyBUTTON::tButton(void *pvParameters) {
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }
+
+void WbudyBUTTON::clearCallbacks() {
+    this->onPressed = nullptr;
+    this->onReleased = nullptr;
+    this->onLongPressed = nullptr;
+    this->onChanged = nullptr;
+}

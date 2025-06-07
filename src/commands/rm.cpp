@@ -20,14 +20,14 @@ rm_command(char *write_buffer, size_t write_buffer_len, const char *command) {
 		return pdFALSE;
 	}
 	if (strncmp(arg, "players", 7) == 0) {
-		ctx.nvmem.numPlayers = 0;
+		ctx.nvmem.currentPlayer = 0;
 		memset(ctx.nvmem.players, 0, sizeof(ctx.nvmem.players));
 	} else if (strncmp(arg, "games", 5) == 0) {
-        ctx.nvmem.numGames = 0;
+        ctx.nvmem.currentGame = 0;
 		memset(ctx.nvmem.games, 0, sizeof(ctx.nvmem.games));
 	} else if (strncmp(arg, "*", 1) == 0) {
-        ctx.nvmem.numPlayers = 0;
-		ctx.nvmem.numGames = 0;
+        ctx.nvmem.currentPlayer = 0;
+		ctx.nvmem.currentGame = 0;
 		memset(ctx.nvmem.players, 0, sizeof(ctx.nvmem.players));
 		memset(ctx.nvmem.games, 0, sizeof(ctx.nvmem.games));
     } else {

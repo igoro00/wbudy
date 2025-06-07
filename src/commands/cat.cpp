@@ -26,12 +26,12 @@ cat_command(char *write_buffer, size_t write_buffer_len, const char *command) {
 		return pdFALSE;
 	}
 	if (strncmp(arg, "players", 7) == 0) {
-		if (step >= ctx.nvmem.numPlayers) {
+		if (step >= ctx.nvmem.currentPlayer) {
 			snprintf(
 				write_buffer,
 				write_buffer_len,
 				"Total players: %d\n",
-				ctx.nvmem.numPlayers
+				ctx.nvmem.currentPlayer
 			);
 			step = 0; // reset step for next command
 			return pdFALSE;
@@ -47,12 +47,12 @@ cat_command(char *write_buffer, size_t write_buffer_len, const char *command) {
 		step++;
 		return pdTRUE;
 	} else if (strncmp(arg, "games", 5) == 0) {
-		if (step >= ctx.nvmem.numGames) {
+		if (step >= ctx.nvmem.currentGame) {
 			snprintf(
 				write_buffer,
 				write_buffer_len,
 				"Total games: %d\n",
-				ctx.nvmem.numGames
+				ctx.nvmem.currentGame
 			);
 			step = 0; // reset step for next command
 			return pdFALSE;

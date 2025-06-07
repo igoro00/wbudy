@@ -43,12 +43,18 @@ void loadGames() {
 	if (ctx.nvmem.magic != NVMEM_MAGIC) {
 		printf("[DAO] NVMem magic mismatch, initializing new NVMem\n");
 		ctx.nvmem.magic = NVMEM_MAGIC;
-		ctx.nvmem.numPlayers = 0;
-		ctx.nvmem.numGames = 0;
+		ctx.nvmem.currentPlayer = 0;
+		ctx.nvmem.currentGame = 0;
 		memset(ctx.nvmem.players, 0, sizeof(ctx.nvmem.players));
 		memset(ctx.nvmem.games, 0, sizeof(ctx.nvmem.games));
+		ctx.nvmem.players[0].uid = 0xEAAA764F;
+		strcpy(ctx.nvmem.players[0].name, "igoro00");
+		ctx.nvmem.players[1].uid = 0x3A4AE9CE;
+		strcpy(ctx.nvmem.players[1].name, "Adzik");
+		ctx.nvmem.players[2].uid = 0x5A7EFF4B;
+		strcpy(ctx.nvmem.players[2].name, "Detweiler");
 	} else {
-		printf("[DAO] Loaded NVMem with %d players and %d games\n", ctx.nvmem.numPlayers, ctx.nvmem.numGames);
+		printf("[DAO] Loaded NVMem with %d players and %d games\n", ctx.nvmem.currentPlayer, ctx.nvmem.currentGame);
 	}
 }
 
@@ -85,14 +91,10 @@ void saveGames() {
 }
 
 const char *getPlayerName(uint32_t uid) { 
-	for (uint32_t i = 0; i < ctx.nvmem.numPlayers; i++) {
+	for (uint32_t i = 0; i < ctx.nvmem.currentPlayer; i++) {
 		if (ctx.nvmem.players[i].uid == uid) {
 			return ctx.nvmem.players[i].name;
 		}
 	}
 	return "Unknown";
-}
-
-Game* getNewGame() {
-	return &(ctx.nvmem.games[ctx.nvmem.numGames++]);
 }
