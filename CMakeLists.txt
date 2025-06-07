@@ -65,6 +65,7 @@ add_executable(wbudy
     src/commands/clear.cpp
     src/commands/load.cpp
     src/commands/save.cpp
+    src/commands/rename.cpp
 )
 
 pico_set_program_name(wbudy "wbudy")

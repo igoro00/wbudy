@@ -82,7 +82,7 @@ void vCommandConsoleTask(void *params) {
 		} else if (c == '\b' && input_index > 0) {
 			input_index--;
 			printf("\b \b");
-		} else if (input_index < MAX_INPUT_LENGTH - 1 && c >= 32 && c <= 126) {
+		} else if (input_index < MAX_INPUT_LENGTH - 1) {
 			input[input_index++] = c;
 			putchar(c);
 		}
@@ -100,4 +100,5 @@ void register_cli_commands() {
     FreeRTOS_CLIRegisterCommand(&cls_definition);
     FreeRTOS_CLIRegisterCommand(&load_definition);
     FreeRTOS_CLIRegisterCommand(&save_definition);
+    FreeRTOS_CLIRegisterCommand(&rename_definition);
 }

@@ -81,3 +81,11 @@ static const CLI_Command_Definition_t save_definition = {
     save_command,
     0
 };
+
+BaseType_t rename_command(char *write_buffer, size_t write_buffer_len, const char *command);
+static const CLI_Command_Definition_t rename_definition = {
+    "rename",
+    "rename 0x<uid> <name>: rename or create a player\n",
+    rename_command,
+    2
+};

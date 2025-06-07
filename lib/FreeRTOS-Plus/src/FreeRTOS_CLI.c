@@ -45,6 +45,11 @@
     #define configAPPLICATION_PROVIDES_cOutputBuffer    0
 #endif
 
+/* Maximum number of parameters that can be extracted from a command line */
+#ifndef configCOMMAND_INT_MAX_PARAMETERS
+    #define configCOMMAND_INT_MAX_PARAMETERS    8
+#endif
+
 /*
  * Register the command passed in using the pxCommandToRegister parameter
  * and using pxCliDefinitionListItemBuffer as the memory for command line
@@ -67,6 +72,16 @@ static BaseType_t prvHelpCommand( char * pcWriteBuffer,
  * Return the number of parameters that follow the command name.
  */
 static int8_t prvGetNumberOfParameters( const char * pcCommandString );
+
+/*
+ * Parse command string and extract parameters, handling quotes and escapes
+ */
+static void prvParseCommandString( const char * pcCommandString );
+
+/*
+ * Check if a character should be treated as escaped
+ */
+static BaseType_t prvIsEscaped( const char * pcString, size_t xPosition );
 
 /* The definition of the "help" command.  This command is always at the front
  * of the list of registered commands. */
@@ -104,6 +119,11 @@ static CLI_Definition_List_Item_t xRegisteredCommands =
     extern char cOutputBuffer[ configCOMMAND_INT_MAX_OUTPUT_SIZE ];
 #endif
 
+/* Static buffer to store parsed parameters */
+static char cParameterBuffer[ configCOMMAND_INT_MAX_OUTPUT_SIZE ];
+static char * pcParsedParameters[ configCOMMAND_INT_MAX_PARAMETERS ];
+static int8_t cParsedParameterCount = 0;
+static const char * pcLastParsedCommand = NULL;
 
 /*-----------------------------------------------------------*/
 
@@ -164,6 +184,9 @@ BaseType_t FreeRTOS_CLIProcessCommand( const char * const pcCommandInput,
 
     if( pxCommand == NULL )
     {
+        /* Parse the command string to extract parameters */
+        prvParseCommandString( pcCommandInput );
+        
         /* Search for the command string in the list of registered commands. */
         for( pxCommand = &xRegisteredCommands; pxCommand != NULL; pxCommand = pxCommand->pxNext )
         {
@@ -184,7 +207,7 @@ BaseType_t FreeRTOS_CLIProcessCommand( const char * const pcCommandInput,
                      * check is made. */
                     if( pxCommand->pxCommandLineDefinition->cExpectedNumberOfParameters >= 0 )
                     {
-                        if( prvGetNumberOfParameters( pcCommandInput ) != pxCommand->pxCommandLineDefinition->cExpectedNumberOfParameters )
+                        if( cParsedParameterCount != pxCommand->pxCommandLineDefinition->cExpectedNumberOfParameters )
                         {
                             xReturn = pdFALSE;
                         }
@@ -237,58 +260,23 @@ const char * FreeRTOS_CLIGetParameter( const char * pcCommandString,
                                        UBaseType_t uxWantedParameter,
                                        BaseType_t * pxParameterStringLength )
 {
-    UBaseType_t uxParametersFound = 0;
-    const char * pcReturn = NULL;
-
-    *pxParameterStringLength = 0;
-
-    while( uxParametersFound < uxWantedParameter )
+    /* Check if we need to reparse the command string */
+    if( pcCommandString != pcLastParsedCommand )
     {
-        /* Index the character pointer past the current word.  If this is the start
-         * of the command string then the first word is the command itself. */
-        while( ( ( *pcCommandString ) != 0x00 ) && ( ( *pcCommandString ) != ' ' ) )
-        {
-            pcCommandString++;
-        }
-
-        /* Find the start of the next string. */
-        while( ( ( *pcCommandString ) != 0x00 ) && ( ( *pcCommandString ) == ' ' ) )
-        {
-            pcCommandString++;
-        }
-
-        /* Was a string found? */
-        if( *pcCommandString != 0x00 )
-        {
-            /* Is this the start of the required parameter? */
-            uxParametersFound++;
-
-            if( uxParametersFound == uxWantedParameter )
-            {
-                /* How long is the parameter? */
-                pcReturn = pcCommandString;
-
-                while( ( ( *pcCommandString ) != 0x00 ) && ( ( *pcCommandString ) != ' ' ) )
-                {
-                    ( *pxParameterStringLength )++;
-                    pcCommandString++;
-                }
-
-                if( *pxParameterStringLength == 0 )
-                {
-                    pcReturn = NULL;
-                }
-
-                break;
-            }
-        }
-        else
-        {
-            break;
-        }
+        prvParseCommandString( pcCommandString );
     }
-
-    return pcReturn;
+    
+    *pxParameterStringLength = 0;
+    
+    /* Check if the requested parameter exists */
+    if( ( uxWantedParameter > 0 ) && ( uxWantedParameter <= cParsedParameterCount ) )
+    {
+        const char * pcParameter = pcParsedParameters[ uxWantedParameter - 1 ];
+        *pxParameterStringLength = strlen( pcParameter );
+        return pcParameter;
+    }
+    
+    return NULL;
 }
 /*-----------------------------------------------------------*/
 
@@ -359,37 +347,155 @@ static BaseType_t prvHelpCommand( char * pcWriteBuffer,
 
 static int8_t prvGetNumberOfParameters( const char * pcCommandString )
 {
-    int8_t cParameters = 0;
-    BaseType_t xLastCharacterWasSpace = pdFALSE;
-
-    /* Count the number of space delimited words in pcCommandString. */
-    while( *pcCommandString != 0x00 )
+    /* Check if we need to reparse the command string */
+    if( pcCommandString != pcLastParsedCommand )
     {
-        if( ( *pcCommandString ) == ' ' )
+        prvParseCommandString( pcCommandString );
+    }
+    
+    return cParsedParameterCount;
+}
+/*-----------------------------------------------------------*/
+
+static BaseType_t prvIsEscaped( const char * pcString, size_t xPosition )
+{
+    size_t xBackslashCount = 0;
+    
+    /* Count consecutive backslashes before the current position */
+    while( ( xPosition > 0 ) && ( pcString[ xPosition - 1 ] == '\\' ) )
+    {
+        xBackslashCount++;
+        xPosition--;
+    }
+    
+    /* If odd number of backslashes, the character is escaped */
+    return ( xBackslashCount % 2 ) ? pdTRUE : pdFALSE;
+}
+/*-----------------------------------------------------------*/
+
+static void prvParseCommandString( const char * pcCommandString )
+{
+    size_t xInputIndex = 0;
+    size_t xOutputIndex = 0;
+    size_t xStringLength;
+    BaseType_t xInQuotes = pdFALSE;
+    BaseType_t xInParameter = pdFALSE;
+    char cCurrentChar;
+    
+    /* Store the command string pointer for future reference */
+    pcLastParsedCommand = pcCommandString;
+    
+    /* Reset parameter count */
+    cParsedParameterCount = 0;
+    
+    /* Clear parameter buffer */
+    memset( cParameterBuffer, 0, sizeof( cParameterBuffer ) );
+    memset( pcParsedParameters, 0, sizeof( pcParsedParameters ) );
+    
+    xStringLength = strlen( pcCommandString );
+    
+    /* Skip the command name first */
+    while( ( xInputIndex < xStringLength ) && ( pcCommandString[ xInputIndex ] != ' ' ) && ( pcCommandString[ xInputIndex ] != 0x00 ) )
+    {
+        xInputIndex++;
+    }
+    
+    /* Skip spaces after command name */
+    while( ( xInputIndex < xStringLength ) && ( pcCommandString[ xInputIndex ] == ' ' ) )
+    {
+        xInputIndex++;
+    }
+    
+    /* Parse parameters */
+    while( ( xInputIndex < xStringLength ) && ( pcCommandString[ xInputIndex ] != 0x00 ) && ( cParsedParameterCount < configCOMMAND_INT_MAX_PARAMETERS ) )
+    {
+        cCurrentChar = pcCommandString[ xInputIndex ];
+        
+        if( cCurrentChar == '"' && !prvIsEscaped( pcCommandString, xInputIndex ) )
         {
-            if( xLastCharacterWasSpace != pdTRUE )
+            /* Toggle quote state */
+            xInQuotes = !xInQuotes;
+            if( !xInParameter )
             {
-                cParameters++;
-                xLastCharacterWasSpace = pdTRUE;
+                /* Start new parameter */
+                pcParsedParameters[ cParsedParameterCount ] = &cParameterBuffer[ xOutputIndex ];
+                xInParameter = pdTRUE;
+            }
+        }
+        else if( cCurrentChar == ' ' && !xInQuotes )
+        {
+            /* End of parameter */
+            if( xInParameter )
+            {
+                cParameterBuffer[ xOutputIndex ] = 0x00; /* Null terminate */
+                xOutputIndex++;
+                cParsedParameterCount++;
+                xInParameter = pdFALSE;
+            }
+            
+            /* Skip multiple spaces */
+            while( ( xInputIndex + 1 < xStringLength ) && ( pcCommandString[ xInputIndex + 1 ] == ' ' ) )
+            {
+                xInputIndex++;
+            }
+        }
+        else if( cCurrentChar == '\\' && !prvIsEscaped( pcCommandString, xInputIndex ) )
+        {
+            /* Escape sequence */
+            if( !xInParameter )
+            {
+                /* Start new parameter */
+                pcParsedParameters[ cParsedParameterCount ] = &cParameterBuffer[ xOutputIndex ];
+                xInParameter = pdTRUE;
+            }
+            
+            /* Check what's being escaped */
+            if( xInputIndex + 1 < xStringLength )
+            {
+                char cNextChar = pcCommandString[ xInputIndex + 1 ];
+                if( ( cNextChar == ' ' ) || ( cNextChar == '"' ) || ( cNextChar == '\\' ) )
+                {
+                    /* Valid escape sequence, add the escaped character */
+                    cParameterBuffer[ xOutputIndex ] = cNextChar;
+                    xOutputIndex++;
+                    xInputIndex++; /* Skip the next character as it's escaped */
+                }
+                else
+                {
+                    /* Invalid escape sequence, treat backslash literally */
+                    cParameterBuffer[ xOutputIndex ] = cCurrentChar;
+                    xOutputIndex++;
+                }
+            }
+            else
+            {
+                /* Backslash at end of string, treat literally */
+                cParameterBuffer[ xOutputIndex ] = cCurrentChar;
+                xOutputIndex++;
             }
         }
         else
         {
-            xLastCharacterWasSpace = pdFALSE;
+            /* Regular character */
+            if( !xInParameter )
+            {
+                /* Start new parameter */
+                pcParsedParameters[ cParsedParameterCount ] = &cParameterBuffer[ xOutputIndex ];
+                xInParameter = pdTRUE;
+            }
+            
+            cParameterBuffer[ xOutputIndex ] = cCurrentChar;
+            xOutputIndex++;
         }
-
-        pcCommandString++;
+        
+        xInputIndex++;
     }
-
-    /* If the command string ended with spaces, then there will have been too
-     * many parameters counted. */
-    if( xLastCharacterWasSpace == pdTRUE )
+    
+    /* Handle last parameter */
+    if( xInParameter )
     {
-        cParameters--;
+        cParameterBuffer[ xOutputIndex ] = 0x00; /* Null terminate */
+        cParsedParameterCount++;
     }
-
-    /* The value returned is one less than the number of space delimited words,
-     * as the first word should be the command itself. */
-    return cParameters;
 }
 /*-----------------------------------------------------------*/
