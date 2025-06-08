@@ -12,6 +12,7 @@
 #include "WbudyBUTTON.h"
 #include "WbudyRGB.h"
 #include "WbudyLCD.h"
+#include "WbudyRFID.h"
 
 enum class GameState {
 	MAIN,
@@ -29,6 +30,7 @@ struct Context {
 	WbudyBUTTON resetButton;
 	WbudyRGB rgb;
 	WbudyLCD lcd;
+	WbudyRFID rfid;
 	uint16_t fotoValue;
 	
 	NVMem nvmem;

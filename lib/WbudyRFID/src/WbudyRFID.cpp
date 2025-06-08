@@ -237,6 +237,7 @@ void WbudyRFID::tPing(void *pvParameters) {
             // Oddanie semafora z powrotem - pozwól na kolejne pingowanie
             xSemaphoreGive(self->callbackActiveMutex);
             vTaskDelay(100 / portTICK_PERIOD_MS);
+        }
     }
 }
 
