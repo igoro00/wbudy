@@ -14,7 +14,7 @@ void WbudyLED::init(uint32_t pin, bool inverted = false) {
     this->inverted = inverted;
     uint32_t freq = 1000; // 1kHz period (goes from 0 to 255, 1000 times a second)
     uint32_t f_sys = clock_get_hz(clk_sys); // typically 125'000'000
-    uint8_t wrap = UINT8_MAX;
+    uint8_t wrap = UINT8_MAX-1;
 
     slice_num = pwm_gpio_to_slice_num(pin);
 	channel_num = pwm_gpio_to_channel(pin);
