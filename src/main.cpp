@@ -95,7 +95,7 @@ void tLoop(void *pvParameters) {
 						"sGame",
 						configMINIMAL_STACK_SIZE * 2,
 						NULL,
-						tskIDLE_PRIORITY + 1,
+						tskIDLE_PRIORITY + 8,
 						&ctx.currentTask
 					);
 					break;

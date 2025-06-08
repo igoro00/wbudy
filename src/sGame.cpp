@@ -41,7 +41,10 @@ void gameButtonISR(uint pin, uint32_t events) {
 // call only if at least one button was pressed
 uint8_t fasterPlayer(){
 	if(pButtons[0] && pButtons[1]){
-		return 0;
+		if (pButtons[0] == pButtons[1]) {
+			return 0;
+		}
+		return (pButtons[0] < pButtons[1]) ? 1 : 2; // lower number == faster
 	}
 	// only one button pressed
 	if(pButtons[0]){
@@ -103,6 +106,8 @@ void sGame(void *pvParameters) {
 		playSound(SoundEffect::PORTAL2);
 		ctx.lcd.clear();
 		ctx.lcd.setCursor(0, 0);
+		ctx.lcd.printf("Round %d", i+1);
+		ctx.lcd.setCursor(1, 0);
 		ctx.lcd.print("Wait for light..");
 		 
 		vTaskDelay(randint(500, 5000) / portTICK_PERIOD_MS);
@@ -117,9 +122,7 @@ void sGame(void *pvParameters) {
 			128
 		);
 		uint32_t ledStarted = time_us_32();
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
 		while (time_us_32() - ledStarted < 5'000'000) {
-			vTaskDelay(10 / portTICK_PERIOD_MS);
 			if (!pButtons[0] && !pButtons[1]) {
 				continue;
 			}
@@ -128,6 +131,11 @@ void sGame(void *pvParameters) {
 
 			// False start means the round is invalid
 			if (falseStart) {
+				if(falseStart == 1) {
+					game.rounds[i].p1_us = UINT32_MAX;
+				} else if (falseStart == 2) {
+					game.rounds[i].p2_us = UINT32_MAX;
+				}
 				playSound(SoundEffect::LOST);
 				ctx.lcd.clear();
 				ctx.lcd.setCursor(0, 0);
@@ -136,7 +144,7 @@ void sGame(void *pvParameters) {
 				ctx.lcd.print("false started...");
 				break;
 			}
-			bool faster = fasterPlayer();
+			uint8_t faster = fasterPlayer();
 			if(faster == 0) {
 				playSound(SoundEffect::LOST);
 				ctx.lcd.clear();
@@ -183,6 +191,7 @@ void sGame(void *pvParameters) {
 		false
 	);
 	ctx.rgb.setRGB(0, 0, 0);
+	ctx.nvmem.currentGame++;
 	saveGames();
 	printf("[sGame] Saved games to flash\n");
 	ctx.gameState = GameState::END;

@@ -46,7 +46,7 @@ extern "C" void HardFault_Handler() {
 }
 
 #define MAX_INPUT_LENGTH 100
-#define MAX_OUTPUT_LENGTH 1024
+#define MAX_OUTPUT_LENGTH 2048
 
 void vCommandConsoleTask(void *params) {
 	char input[MAX_INPUT_LENGTH];

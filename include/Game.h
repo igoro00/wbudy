@@ -13,8 +13,8 @@ struct Round {
 	// 0x01 - player1
 	// 0x02 - player2
 	uint8_t player; 
-	uint32_t p1_us;
-	uint32_t p2_us;
+	int32_t p1_us;
+	int32_t p2_us;
 };
 
 #define PLAYER_NAME_SIZE 12
