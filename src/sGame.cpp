@@ -119,7 +119,7 @@ void sGame(void *pvParameters) {
 		ctx.rgb.setHSL(
 			UIDtoHUE(game.players[game.rounds[i].player-1]),
 			255,
-			128
+			FotoToL(ctx.fotoValue)
 		);
 		uint32_t ledStarted = time_us_32();
 		while (time_us_32() - ledStarted < 5'000'000) {

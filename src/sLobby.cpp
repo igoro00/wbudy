@@ -101,12 +101,12 @@ void sLobby(void *pvParameters) {
 			if (ctx.redButton.isPressed()) {
 				ctx.rgb.setHSL(
 					UIDtoHUE(ctx.nvmem.games[ctx.nvmem.currentGame].players[0]),
-					255, 128
+					255, FotoToL(ctx.fotoValue)
 				);
 			} else if (ctx.yellowButton.isPressed()) {
 				ctx.rgb.setHSL(
 					UIDtoHUE(ctx.nvmem.games[ctx.nvmem.currentGame].players[1]),
-					255, 128
+					255, FotoToL(ctx.fotoValue)
 				);
 			} else {
 				ctx.rgb.setRGB(0, 0, 0);

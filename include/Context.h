@@ -8,6 +8,7 @@
 #include <semphr.h>
 
 #include "Game.h"
+#include "pindefs.h"
 #include "WbudyBUTTON.h"
 #include "WbudyRGB.h"
 #include "WbudyLCD.h"
@@ -28,10 +29,11 @@ struct Context {
 	WbudyBUTTON resetButton;
 	WbudyRGB rgb;
 	WbudyLCD lcd;
-
-	uint32_t cardUID;
+	uint16_t fotoValue;
 	
 	NVMem nvmem;
 };
+
+uint8_t FotoToL(uint16_t fotoValue);
 
 extern Context ctx;

@@ -98,3 +98,26 @@ const char *getPlayerName(uint32_t uid) {
 	}
 	return "Unknown";
 }
+
+
+// templated map
+template<typename T>
+inline T map(T value, T in_min, T in_max, T out_min, T out_max) {
+	if (in_min == in_max) return out_min; // avoid division by zero
+	return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+template<typename T>
+inline T clamp(T value, T min, T max) {
+	if (value < min) return min;
+	if (value > max) return max;
+	return value;
+}
+
+
+// i didnt know where to put it
+// we dont have utils.cpp
+// and i dont want to create a full lib for this
+uint8_t FotoToL(uint16_t fotoValue){
+	return clamp<int32_t>(map<int32_t>((int32_t)fotoValue, FOTO_MIN, FOTO_MAX, 8, 128), 8, 128);
+}

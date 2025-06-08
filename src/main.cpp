@@ -7,6 +7,7 @@
 #include <pico/cyw43_arch.h>
 #include <pico/stdlib.h>
 #include <pico/multicore.h>
+#include <hardware/adc.h>
 
 #include <lwip/apps/httpd.h>
 #include <lwip/apps/mdns.h>
@@ -40,6 +41,10 @@ void setupPins(){
 	ctx.yellowButton.init(YELLOW_BTN, false, 50);
 	ctx.resetButton.init(GAME_RST_BTN, false, 50);
 	initSound();
+	adc_init();
+    adc_gpio_init(FOTORESISTOR);
+    adc_select_input(0);
+	ctx.fotoValue = adc_read();
 
 	ctx.gameState = GameState::MAIN;
 	ctx.taskMutex = xSemaphoreCreateBinary();
@@ -55,6 +60,13 @@ void main_task(__unused void *params) {
     }
 	while(1){
 		vTaskDelay(1000/portTICK_PERIOD_MS);
+	}
+}
+
+void tFoto(void *pvParameters) {
+	while (1) {
+		ctx.fotoValue = adc_read();
+		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }
 
@@ -128,6 +140,16 @@ int main() {
 		tskIDLE_PRIORITY + 1, 
 		NULL
 	);
+
+	xTaskCreate(
+		tFoto, 
+		"tFoto", 
+		configMINIMAL_STACK_SIZE, 
+		NULL, 
+		tskIDLE_PRIORITY, 
+		NULL
+	);
+
 
 	xTaskCreate(
 		tLoop,

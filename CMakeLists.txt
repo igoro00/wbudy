@@ -93,6 +93,7 @@ target_link_libraries(wbudy
     pico_multicore
     pico_runtime    
     hardware_spi
+    hardware_adc
     hardware_i2c
     hardware_timer
     hardware_flash

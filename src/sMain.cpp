@@ -35,7 +35,7 @@ void sMain(void *pvParameters) {
     ctx.lcd.setCursor(1, 0);
     ctx.lcd.print("to start.");
     while(1) {
-        ctx.rgb.setHSL(hue++, 255, 128);
+        ctx.rgb.setHSL(hue++, 255, FotoToL(ctx.fotoValue));
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }
