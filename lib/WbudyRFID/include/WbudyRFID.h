@@ -22,8 +22,7 @@ public:
     bool isCardPresent();
 
     // Obsługa przerwań
-    void attachInterrupt(CardCallback cb);
-    void detachInterrupt();
+    void setOnScanned(CardCallback cb);
 
     static void tPing(void *pvParameters);
     static void tReadCard(void *pvParameters);

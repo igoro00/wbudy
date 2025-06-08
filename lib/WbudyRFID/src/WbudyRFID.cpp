@@ -114,16 +114,15 @@ uint32_t WbudyRFID::getUUID() {
     return uuid;
 }
 
-void WbudyRFID::attachInterrupt(CardCallback cb) {
+void WbudyRFID::setOnScanned(CardCallback cb) {
     _callback = cb;
-    // Oddanie semafora - odblokuj tPing
-    xSemaphoreGive(callbackActiveMutex);
-}
-
-void WbudyRFID::detachInterrupt() {
-    _callback = nullptr;
-    // Zabiera semafor - zablokuj tPing
-    xSemaphoreTake(callbackActiveMutex, 0); // Nie czekaj, jeśli semafor już jest zabrany
+    if (cb != nullptr) { 
+        // Callback jest ustawiony - odblokuj tPing
+        xSemaphoreGive(callbackActiveMutex);
+    } else {
+        // Jeśli callback jest nullptr, to nie blokujemy tPing
+        xSemaphoreTake(callbackActiveMutex, 0); // Nie czekaj, jeśli semafor już jest zabrany
+    }
 }
 
 void WbudyRFID::irqHandler(uint gpio, uint32_t events) {
