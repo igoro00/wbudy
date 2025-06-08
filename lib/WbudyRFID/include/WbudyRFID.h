@@ -18,7 +18,7 @@ public:
 
     bool init();
     uint32_t getUUID();
-    void startCardDetection(); // Zmieniona nazwa z pollForCard
+    void startCardDetection();
     bool isCardPresent();
 
     // Obsługa przerwań
@@ -55,6 +55,7 @@ private:
     volatile bool _irq_fired;
     CardCallback _callback;
     SemaphoreHandle_t taskIrqMutex;
+    SemaphoreHandle_t callbackActiveMutex;
 
     // MFRC522 Register addresses
     static constexpr uint8_t CommandReg = 0x01; // Sterowanie komendami
