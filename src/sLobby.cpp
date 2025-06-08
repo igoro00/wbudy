@@ -1,58 +1,68 @@
 #include <hardware/gpio.h>
 #include <stdio.h>
+#include <math.h>
 
 #include <FreeRTOS.h>
 #include <task.h>
 #include <queue.h>
 
-#include "pindefs.hpp"
+#include "pindefs.h"
 #include "Context.h"
 
 #include "states.h"
 
 #include "tSound.h"
 
-bool updateLCD;
-
 // settingPlayer:
 // 0 - no one
 // 1 - player 1
 // 4 - player 2
-void updateLobbyLCD(uint8_t settingPlayer = 0) {
-	// updateLCD = false;
-	// LiquidCrystal_I2C *lcd = ctx.lcd;
-	// lcd->clear();
+void updateLobbyLCD() {
+	ctx.lcd.clear();
 
-	// lcd->setCursor(0, 0);
-	// if (settingPlayer == 1) {
-	// 	lcd->print("_");
-	// }
-	// if (ctx.game->getPlayer(0).uid == 0) {
-	// 	lcd->print("Player 1");
-	// } else {
-	// 	printPolishMsg(*ctx.lcd, ctx.game->getPlayer(0).name);
-	// }
-	// if (settingPlayer == 1) {
-	// 	lcd->print("_");
-	// }
+	ctx.lcd.setCursor(0, 0);
+	if (ctx.redButton.isPressed()) {
+		ctx.lcd.print("_");
+	}
+	if (ctx.nvmem.games[ctx.nvmem.currentGame].players[0] == 0) {
+		ctx.lcd.print("Player 1");
+	} else {
+		ctx.lcd.print(getPlayerName(ctx.nvmem.games[ctx.nvmem.currentGame].players[0]));
+	}
+	if (ctx.redButton.isPressed()) {
+		ctx.lcd.print("_");
+	}
 
-	// lcd->setCursor(0, 1);
-	// if (settingPlayer == 2) {
-	// 	lcd->print("_");
-	// }
-	// if (ctx.game->getPlayer(1).uid == 0) {
-	// 	lcd->print("Player 2");
-	// } else {
-	// 	printPolishMsg(*ctx.lcd, ctx.game->getPlayer(1).name);
-	// }
-	// if (settingPlayer == 2) {
-	// 	lcd->print("_");
-	// }
+	ctx.lcd.setCursor(1, 0);
+	if (ctx.yellowButton.isPressed()) {
+		ctx.lcd.print("_");
+	}
+	if (ctx.nvmem.games[ctx.nvmem.currentGame].players[1] == 0) {
+		ctx.lcd.print("Player 2");
+	} else {
+		ctx.lcd.print(getPlayerName(ctx.nvmem.games[ctx.nvmem.currentGame].players[1]));
+	}
+	if (ctx.yellowButton.isPressed()) {
+		ctx.lcd.print("_");
+	}
 }
 
 void btnPressed(WbudyBUTTON *btn) {
 	printf("[sLobby] Button pressed on pin %d\n", btn->getPin());
 	playSound(SoundEffect::OK);
+	updateLobbyLCD();
+}
+
+void goToGame(WbudyBUTTON *btn) {
+	printf("[sLobby] Going to game\n");
+	ctx.redButton.clearCallbacks();
+	ctx.yellowButton.clearCallbacks();
+	ctx.resetButton.clearCallbacks();
+	ctx.lcd.clear();
+	ctx.rgb.setRGB(0, 0, 0);
+	ctx.gameState = GameState::GAME;
+	xSemaphoreGive(ctx.taskMutex);
+	printf("[sLobby] Gave task mutex\n");
 }
 
 #define START_GAME_TIME 1000
@@ -62,23 +72,46 @@ void sLobby(void *pvParameters) {
 		vTaskDelay(10 / portTICK_PERIOD_MS);
 	}
 	printf("[sLobby] Took task mutex\n");
-	ctx.redButton.setOnPressed(btnPressed);
-	ctx.lcd.clear();
-	ctx.lcd.setCursor(0, 0);
-	ctx.lcd.print("Waiting for cards");
-	// if (ctx.game == nullptr) {
-	// 	ctx.game = std::make_unique<Game>(0, 0);
-	// } else {
-	// 	// we dont pass Player
-	// 	// so it has time to refresh from the file system
-	// 	ctx.game = std::make_unique<Game>(
-	// 		ctx.game->getPlayer(0).uid,
-	// 		ctx.game->getPlayer(1).uid
-	// 	);
-	// }
+	while(ctx.resetButton.isPressed()) {
+		printf("[sLobby] Waiting for reset button to be released\n");
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+	}
 
-	// uint32_t lastRST = 0;
+	ctx.redButton.setOnPressed(btnPressed);
+	ctx.yellowButton.setOnPressed(btnPressed);
+
+	ctx.redButton.setOnChanged([](WbudyBUTTON* btn, bool state) { updateLobbyLCD(); });
+	ctx.yellowButton.setOnChanged([](WbudyBUTTON* btn, bool state) { updateLobbyLCD(); });
+	
+	ctx.resetButton.setOnLongPressed(goToGame);
+
+	ctx.nvmem.games[ctx.nvmem.currentGame].players[0] = ctx.nvmem.players[0].uid;
+	ctx.nvmem.games[ctx.nvmem.currentGame].players[1] = ctx.nvmem.players[1].uid;
+	updateLobbyLCD();
 	while (1) {
+		if (ctx.resetButton.isPressed()) {
+
+			// funkcja wykładnicza przechodząca przez (0,0) i (255,255)
+			float x = (float)ctx.resetButton.msSinceChange() / START_GAME_TIME;
+			static const float k = 4.0;
+			float val = 255.0 * (exp(k * x) - 1.0) / (exp(k) - 1.0);
+
+			ctx.rgb.setRGB((uint8_t)val,0,0);
+		} else {
+			if (ctx.redButton.isPressed()) {
+				ctx.rgb.setHSL(
+					UIDtoHUE(ctx.nvmem.games[ctx.nvmem.currentGame].players[0]),
+					255, FotoToL(ctx.fotoValue)
+				);
+			} else if (ctx.yellowButton.isPressed()) {
+				ctx.rgb.setHSL(
+					UIDtoHUE(ctx.nvmem.games[ctx.nvmem.currentGame].players[1]),
+					255, FotoToL(ctx.fotoValue)
+				);
+			} else {
+				ctx.rgb.setRGB(0, 0, 0);
+			}
+		}
 
 	// 	if (rfidOn && !rfidShouldBe) {
 	// 		rfidOn = false;
@@ -90,12 +123,6 @@ void sLobby(void *pvParameters) {
 	// 	digitalWrite(LED_BUILTIN, rfidOn);
 
 	// 	rfidShouldBe = false;
-	// 	bool yellowBtn = !digitalRead(YELLOW_BTN);
-	// 	bool redBtn = !digitalRead(RED_BTN);
-	// 	bool rstBtn = !digitalRead(GAME_RST_BTN);
-
-	// 	if (updateLCD)
-	// 		updateLobbyLCD(redBtn | yellowBtn << 1);
 
 	// 	if (rstBtn && ctx.game->getPlayer(0).uid && ctx.game->getPlayer(1).uid &&
 	// 		!redBtn && !yellowBtn) {

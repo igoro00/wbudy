@@ -88,3 +88,15 @@ template <typename T> inline T WbudyRGB::clamp(T value, T min, T max) {
 		return max;
 	return value;
 }
+
+uint8_t UIDtoHUE(uint32_t input) {
+	uint8_t hash = 0;
+
+	// Process each byte of the input
+	for (int i = 0; i < 4; ++i) {
+		hash ^= (input >> (i * 8)) & 0xFF; // XOR each byte into hash
+		hash = (hash << 3) | (hash >> 5);  // Rotate left by 3 bits
+	}
+
+	return hash;
+}

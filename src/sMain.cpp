@@ -21,10 +21,21 @@ void sMain(void *pvParameters) {
         printf("[sMain] Waiting for task mutex\n");
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
+    ctx.lcd.clear();
+    ctx.lcd.setCursor(0, 0);
+    ctx.lcd.print("Loading...");
+
+    loadGames();
+
     playSound(SoundEffect::MARIO_THEME);
     ctx.resetButton.setOnPressed(goToLobby);
+    ctx.lcd.clear();
+    ctx.lcd.setCursor(0, 0);
+    ctx.lcd.print("Press reset btn");
+    ctx.lcd.setCursor(1, 0);
+    ctx.lcd.print("to start.");
     while(1) {
-        ctx.rgb.setHSL(hue++, 255, 128);
+        ctx.rgb.setHSL(hue++, 255, FotoToL(ctx.fotoValue));
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }

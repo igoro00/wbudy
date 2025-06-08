@@ -15,3 +15,6 @@
 #define SPEAKER 22
 #define LCD_SDA 4
 #define LCD_SCL 5
+#define FOTORESISTOR 26
+#define FOTO_MIN 1500
+#define FOTO_MAX 3500

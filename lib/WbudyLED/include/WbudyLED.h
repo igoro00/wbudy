@@ -14,4 +14,5 @@ class WbudyLED {
     private:
         uint32_t slice_num;
         uint32_t channel_num;
+        bool inverted;
 };

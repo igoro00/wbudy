@@ -17,6 +17,7 @@ public:
     void clear();
     void setCursor(uint8_t row, uint8_t col);
     void print(const char* str);
+    void printf(const char* fmt, ...);
     void setBacklight(bool val);
 
 private:

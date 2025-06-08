@@ -1,4 +1,6 @@
 #include "WbudyLCD.h"
+#include <stdarg.h>
+#include <cstdio>
 
 #define LCD_BACKLIGHT 0x08
 #define LCD_ENABLE    0x04
@@ -208,6 +210,18 @@ void WbudyLCD::print(const char* str) {
         }
         str++;
     }
+}
+
+void WbudyLCD::printf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    
+    char buffer[256];
+    vsnprintf(buffer, sizeof(buffer), fmt, args);
+    
+    va_end(args);
+    
+    print(buffer);
 }
 
 void WbudyLCD::setBacklight(bool val)  { _backlight = val; }

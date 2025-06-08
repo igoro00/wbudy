@@ -23,3 +23,5 @@ class WbudyRGB {
         uint32_t hslToRGB(uint8_t h, uint8_t s, uint8_t l);
         template <typename T> T clamp(T value, T min, T max);
 };
+
+uint8_t UIDtoHUE(uint32_t input);

@@ -6,6 +6,8 @@
 #include <hardware/timer.h>
 #include <pico/cyw43_arch.h>
 #include <pico/stdlib.h>
+#include <pico/multicore.h>
+#include <hardware/adc.h>
 
 #include <lwip/apps/httpd.h>
 #include <lwip/apps/mdns.h>
@@ -14,22 +16,21 @@
 
 #include "tSound.h"
 #include "states.h"
+#include "rtoshooks.h"
 
 #include "Context.h"
-#include "pindefs.hpp"
+#include "pindefs.h"
 
 Context ctx;
 QueueHandle_t soundQueue;
 
-// In main.c or a new file, e.g., time_us_32_shim.c
-#include "hardware/timer.h"
 
 uint32_t micros32(void) {
     return time_us_32(); // Calls the SDK's static inline function
 }
 
 void setupPins(){
-	ctx.rgb.init(LED_R, LED_G, LED_B);
+	ctx.rgb.init(LED_R, LED_G, LED_B, true);
 	ctx.lcd.init(
 		i2c0,
 		0x27,
@@ -40,6 +41,10 @@ void setupPins(){
 	ctx.yellowButton.init(YELLOW_BTN, false, 50);
 	ctx.resetButton.init(GAME_RST_BTN, false, 50);
 	initSound();
+	adc_init();
+    adc_gpio_init(FOTORESISTOR);
+    adc_select_input(0);
+	ctx.fotoValue = adc_read();
 
 	ctx.rfid.init(
 		spi0,
@@ -65,59 +70,32 @@ void setupPins(){
 	ctx.taskMutex = xSemaphoreCreateBinary();
 	xSemaphoreGive(ctx.taskMutex);
 	soundQueue = xQueueCreate(8, sizeof(SoundEffect));
+	register_cli_commands();
 }
-
-void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
-	// This function is called if a stack overflow is detected
-	// You can add your own error handling code here
-	while (1) {
-		printf("Stack overflow in task %s\n", pcTaskName);
-		printf("Reboot the device\n\n");
-		sleep_ms(1000);
-	}
-}
-
-extern "C" void vApplicationIdleHook() {
-    // This function is called when the system is idle
-    // You can add your own code here, e.g., low-power mode
-    // For now, we just yield to allow other tasks to run
-    vTaskDelay(1 / portTICK_PERIOD_MS);
-}
-
-extern "C" void vApplicationPassiveIdleHook(void) {
-    // Optional: Add low-power code here
-}
-
 
 void main_task(__unused void *params) {
     if (cyw43_arch_init()) {
-        printf("failed to initialise\n");
+        printf("[WiFi] cyw43_arch_init failed\n");
         return;
     }
-    // char buff[512];
-    while(1){
-        // printf("\nTask          State  Prio Stack Num\n");
-        // printf("***********************************\n");
-        // vTaskList(buff);
-        // printf("%s\n", buff);
+	while(1){
+		vTaskDelay(1000/portTICK_PERIOD_MS);
+	}
+}
 
-        // printf("Task            Abs Time    CPU%%\n");
-        // printf("***********************************\n");
-        // vTaskGetRunTimeStats(buff);
-        // printf("%s\n", buff);
-
-        vTaskDelay(1000/portTICK_PERIOD_MS);
-    }
-
-    cyw43_arch_deinit();
+void tFoto(void *pvParameters) {
+	while (1) {
+		ctx.fotoValue = adc_read();
+		vTaskDelay(100 / portTICK_PERIOD_MS);
+	}
 }
 
 void tLoop(void *pvParameters) {
 	while (1) {
 		printf("[Supervisor] trying to get mutex\n");
-		if(xSemaphoreTake(ctx.taskMutex, 10000/portTICK_PERIOD_MS) == pdTRUE) {
+		if(xSemaphoreTake(ctx.taskMutex, portMAX_DELAY) == pdTRUE) {
 			printf("[Supervisor] took mutex\n");
-			if(ctx.currentTask && eTaskGetState(ctx.currentTask) == eRunning) {
+			if(ctx.currentTask) {
 				vTaskDelete(ctx.currentTask);
 			}
 			ctx.currentTask = NULL;
@@ -147,9 +125,9 @@ void tLoop(void *pvParameters) {
 					xTaskCreate(
 						sGame,
 						"sGame",
-						configMINIMAL_STACK_SIZE * 4,
+						configMINIMAL_STACK_SIZE * 2,
 						NULL,
-						tskIDLE_PRIORITY + 2,
+						tskIDLE_PRIORITY + 8,
 						&ctx.currentTask
 					);
 					break;
@@ -161,7 +139,6 @@ void tLoop(void *pvParameters) {
 
 int main() {
 	stdio_init_all();
-	sleep_ms(1000);
 	setupPins();
 
 	TaskHandle_t task;
@@ -174,6 +151,25 @@ int main() {
 		tskIDLE_PRIORITY,
 		&task
 	);
+
+	xTaskCreate(
+		vCommandConsoleTask, 
+		"CLI", 
+		1024, 
+		NULL, 
+		tskIDLE_PRIORITY + 1, 
+		NULL
+	);
+
+	xTaskCreate(
+		tFoto, 
+		"tFoto", 
+		configMINIMAL_STACK_SIZE, 
+		NULL, 
+		tskIDLE_PRIORITY, 
+		NULL
+	);
+
 
 	xTaskCreate(
 		tLoop,

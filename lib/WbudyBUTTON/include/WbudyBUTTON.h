@@ -12,8 +12,9 @@ class WbudyBUTTON {
         void setOnReleased(void (*cb)(WbudyBUTTON *btn));
         void setOnLongPressed(void (*cb)(WbudyBUTTON *btn));
         void setOnChanged(void (*cb)(WbudyBUTTON *btn, bool pressed));
+        void clearCallbacks();
 
-        uint32_t msSincePress();
+        uint32_t msSinceChange();
 
         bool isPressed();
 

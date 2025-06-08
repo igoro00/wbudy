@@ -1,10 +1,5 @@
 #pragma once
 
-#define configNUMBER_OF_CORES 2
-
-// #include "FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2040/include/portmacro.h"
-// #include "FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2040/include/rp2040_config.h"
-
 // This example uses a common include to avoid repetition
 #include "FreeRTOSConfig_examples_common.h"
 
@@ -33,4 +28,8 @@ extern uint64_t time_us_64(void);						// "hardware/timer.h"
 
 #define PICO_CYW43_ARCH_FREERTOS
 
+#undef configUSE_PASSIVE_IDLE_HOOK
 #define configUSE_PASSIVE_IDLE_HOOK 1
+
+// for FreeRTOS CLI
+#define configCOMMAND_INT_MAX_OUTPUT_SIZE 2096
