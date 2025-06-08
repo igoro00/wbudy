@@ -2,6 +2,8 @@
 #include "WbudyRFID.h"
 #include "pico/stdlib.h"
 #include <stdio.h>
+#include <FreeRTOS.h>
+#include <task.h>
 
 WbudyRFID* WbudyRFID::_instance = nullptr;
 
@@ -21,18 +23,22 @@ bool WbudyRFID::init(spi_inst_t* spi, uint8_t csPin, uint8_t resetPin, uint8_t i
     this->_rfid_mosi = rfidMosi;
     this->_callback = nullptr;
     _instance = this;
+
+    // Inicjalizacja mutexa
     this->taskIrqMutex = xSemaphoreCreateBinary();
     xSemaphoreGive(this->taskIrqMutex);
+
+    // Konfiguracja przerwania
     gpio_set_irq_enabled_with_callback(_irq_pin, GPIO_IRQ_EDGE_FALL, true, &WbudyRFID::irqHandler);
 
+    // Inicjalizacja SPI
     spi_init(_spi, 1000000);
     spi_set_format(_spi, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
-    
     gpio_set_function(_rfid_miso, GPIO_FUNC_SPI);
     gpio_set_function(_rfid_sck, GPIO_FUNC_SPI);
     gpio_set_function(_rfid_mosi, GPIO_FUNC_SPI);
-    // przeniesione z main
 
+    // Inicjalizacja pinów
     gpio_init(_cs_pin);
     gpio_set_dir(_cs_pin, GPIO_OUT);
     gpio_put(_cs_pin, 1);
@@ -50,7 +56,7 @@ bool WbudyRFID::init(spi_inst_t* spi, uint8_t csPin, uint8_t resetPin, uint8_t i
     writeRegister(ModeReg, 0x3D);
     antennaOn();
 
-    // KLUCZOWA ZMIANA: Włącz przerwania dla RxIRq i IdleIRq
+    // Włączenie przerwań dla RxIRq i IdleIRq
     writeRegister(ComIEnReg, 0xA0); // IRqInv (0x80) + RxIEn (0x20) = 0xA0
     
     // Wyczyść wszystkie flagi przerwań
@@ -58,6 +64,24 @@ bool WbudyRFID::init(spi_inst_t* spi, uint8_t csPin, uint8_t resetPin, uint8_t i
     writeRegister(DivIrqReg, 0x7F);
 
     uint8_t version = readRegister(0x37);
+
+    xTaskCreate(
+        tPing,
+        "tPing",
+        2048,
+        this,
+        tskIDLE_PRIORITY + 1,
+        NULL
+    );
+
+	xTaskCreate(
+		tReadCard,
+		"tReadCard",
+		2048,
+		this,
+		tskIDLE_PRIORITY + 3,
+		NULL
+	);
 
     return (version != 0 && version != 0xFF);
 }

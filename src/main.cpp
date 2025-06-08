@@ -184,24 +184,6 @@ int main() {
 		NULL
 	);
 
-	xTaskCreate(
-        WbudyRFID::tPing,
-        "tPing",
-        2048,
-        &ctx.rfid,
-        tskIDLE_PRIORITY + 2,
-        NULL
-    );
-
-	xTaskCreate(
-		WbudyRFID::tReadCard,
-		"tReadCard",
-		2048,
-		&ctx.rfid,
-		tskIDLE_PRIORITY + 2,
-		NULL
-	);
-
 	vTaskStartScheduler();
 
 	while (true) {
