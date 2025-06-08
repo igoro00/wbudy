@@ -228,6 +228,11 @@ void WbudyRFID::tPing(void *pvParameters) {
     while (1) {
         // Czeka na semafor - blokuj jeśli nie ma callbacka
         if (xSemaphoreTake(self->callbackActiveMutex, portMAX_DELAY) == pdTRUE) {
+            // Sprawdź czy callback nadal istnieje
+            if (self->_callback == nullptr) {
+                // Callback został odłączony, wróć do czekania na semafor
+                continue;
+            }
             self->startCardDetection();
             // Oddanie semafora z powrotem - pozwól na kolejne pingowanie
             xSemaphoreGive(self->callbackActiveMutex);
