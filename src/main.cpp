@@ -56,16 +56,6 @@ void setupPins(){
 		RFID_MOSI
 	);
 
-	ctx.rfid.attachInterrupt([](uint32_t uid) {
-		printf("[RFID] Card detected with UID: %08X\n", uid);
-		ctx.cardUID = uid;
-		if (ctx.gameState == GameState::LOBBY || ctx.gameState == GameState::GAME) {
-			if (ctx.game) {
-				ctx.game->setPlayer(true, uid);
-			}
-		}
-	});
-
 	ctx.gameState = GameState::MAIN;
 	ctx.taskMutex = xSemaphoreCreateBinary();
 	xSemaphoreGive(ctx.taskMutex);
