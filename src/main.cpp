@@ -46,6 +46,16 @@ void setupPins(){
     adc_select_input(0);
 	ctx.fotoValue = adc_read();
 
+	ctx.rfid.init(
+		spi0,
+		RFID_CS,
+		RFID_RST,
+		RFID_IRQ,
+		RFID_MISO,
+		RFID_SCK,
+		RFID_MOSI
+	);
+
 	ctx.gameState = GameState::MAIN;
 	ctx.taskMutex = xSemaphoreCreateBinary();
 	xSemaphoreGive(ctx.taskMutex);
@@ -159,6 +169,7 @@ int main() {
 		tskIDLE_PRIORITY + 1,
 		NULL
 	);
+
 	vTaskStartScheduler();
 
 	while (true) {

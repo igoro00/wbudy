@@ -10,7 +10,16 @@ add_library(WbudyRFID STATIC
     src/WbudyRFID.cpp
 )
 
+target_link_libraries(WbudyRFID
+    pico_stdlib
+    hardware_spi
+    hardware_gpio
+    FreeRTOS-Kernel
+)
+
 # Specify include directories for consumers of the library
 target_include_directories(WbudyRFID PUBLIC
+    ${PROJECT_SOURCE_DIR}/../../include
     ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/../../freertos/FreeRTOS-Kernel/include
 )
