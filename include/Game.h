@@ -12,7 +12,7 @@ struct Round {
 	// 0x00 - nie rozegrano rundy
 	// 0x01 - player1
 	// 0x02 - player2
-	uint8_t player; 
+	uint8_t player;
 	int32_t p1_us;
 	int32_t p2_us;
 };
@@ -20,7 +20,7 @@ struct Round {
 #define PLAYER_NAME_SIZE 12
 struct Player {
 	uint32_t uid;
-	char name[PLAYER_NAME_SIZE*4];
+	char name[PLAYER_NAME_SIZE * 4];
 };
 
 struct Game {
@@ -38,4 +38,4 @@ struct NVMem { // 32k
 
 void loadGames();
 void saveGames();
-const char* getPlayerName(uint32_t uid);
+const char *getPlayerName(uint32_t uid);

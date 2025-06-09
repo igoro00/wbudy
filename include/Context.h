@@ -4,22 +4,17 @@
 #include <memory>
 
 #include <FreeRTOS.h>
-#include <task.h>
 #include <semphr.h>
+#include <task.h>
 
 #include "Game.h"
-#include "pindefs.h"
 #include "WbudyBUTTON.h"
-#include "WbudyRGB.h"
 #include "WbudyLCD.h"
 #include "WbudyRFID.h"
+#include "WbudyRGB.h"
+#include "pindefs.h"
 
-enum class GameState {
-	MAIN,
-	LOBBY,
-	GAME,
-	END
-};
+enum class GameState { MAIN, LOBBY, GAME, END };
 struct Context {
 	SemaphoreHandle_t taskMutex;
 	TaskHandle_t currentTask;
@@ -32,7 +27,7 @@ struct Context {
 	WbudyLCD lcd;
 	WbudyRFID rfid;
 	uint16_t fotoValue;
-	
+
 	NVMem nvmem;
 };
 

@@ -1,15 +1,17 @@
 #include <cstring>
-#include <stdio.h>
 #include <pico/multicore.h>
 #include <pico/stdlib.h>
+#include <stdio.h>
 
 #include "Context.h"
 #include "Game.h"
 #include "pindefs.h"
 #include "rtoshooks.h"
 
-extern "C" void
-vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
+extern "C" void vApplicationStackOverflowHook(
+	TaskHandle_t xTask,
+	char *pcTaskName
+) {
 	// This function is called if a stack overflow is detected
 	// You can add your own error handling code here
 	while (1) {
@@ -89,16 +91,14 @@ void vCommandConsoleTask(void *params) {
 	}
 }
 
-
-
 void register_cli_commands() {
 	FreeRTOS_CLIRegisterCommand(&hello_definition);
 	FreeRTOS_CLIRegisterCommand(&top_definition);
 	FreeRTOS_CLIRegisterCommand(&cat_definition);
 	FreeRTOS_CLIRegisterCommand(&rm_definition);
-    FreeRTOS_CLIRegisterCommand(&clear_definition);
-    FreeRTOS_CLIRegisterCommand(&cls_definition);
-    FreeRTOS_CLIRegisterCommand(&load_definition);
-    FreeRTOS_CLIRegisterCommand(&save_definition);
-    FreeRTOS_CLIRegisterCommand(&rename_definition);
+	FreeRTOS_CLIRegisterCommand(&clear_definition);
+	FreeRTOS_CLIRegisterCommand(&cls_definition);
+	FreeRTOS_CLIRegisterCommand(&load_definition);
+	FreeRTOS_CLIRegisterCommand(&save_definition);
+	FreeRTOS_CLIRegisterCommand(&rename_definition);
 }

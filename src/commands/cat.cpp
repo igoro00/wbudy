@@ -1,13 +1,16 @@
-#include "rtoshooks.h"
 #include "Context.h"
+#include "rtoshooks.h"
 
 // Jeśli zwrócisz pdTRUE to funkcja zostanie wywołana ponownie
 // ale step bedzie zachowany.
 // Wysyłamy w jednym wywołaniu tylko jedną grę/gracza żeby oszczędzać na buforze
 // (tylko 1024 bajty). Jeśli zwrócisz pdFALSE to funkcja nie będzie wywoływana
 // ponownie.
-BaseType_t
-cat_command(char *write_buffer, size_t write_buffer_len, const char *command) {
+BaseType_t cat_command(
+	char *write_buffer,
+	size_t write_buffer_len,
+	const char *command
+) {
 	static int step = 0;
 	const char *arg;
 	write_buffer[0] = '\0';
@@ -18,11 +21,7 @@ cat_command(char *write_buffer, size_t write_buffer_len, const char *command) {
 		return pdFALSE;
 	}
 	if (ctx.nvmem.magic != NVMEM_MAGIC) {
-		snprintf(
-			write_buffer,
-			write_buffer_len,
-			"NVMem is corrupted\n"
-		);
+		snprintf(write_buffer, write_buffer_len, "NVMem is corrupted\n");
 		return pdFALSE;
 	}
 	if (strncmp(arg, "players", 7) == 0) {
@@ -94,34 +93,31 @@ cat_command(char *write_buffer, size_t write_buffer_len, const char *command) {
 			getPlayerName(game->players[1]),
 			game->players[1]
 		);
-        n += snprintf(
-            write_buffer + n,
-            write_buffer_len - n,
-            "\tRounds:\n"
-        );
+		n += snprintf(write_buffer + n, write_buffer_len - n, "\tRounds:\n");
 		for (int i = 0; i < sizeof(game->rounds) / sizeof(Round); i++) {
 			n += snprintf(
 				write_buffer + n,
 				write_buffer_len - 1,
-				"\t\tRound %2d: Player: %*s (UID: 0x%08X) p1_us: %*d p2_us: %*d",
+				"\t\tRound %2d: Player: %*s (UID: 0x%08X) p1_us: %*d p2_us: "
+				"%*d",
 				i + 1,
 				longer_len,
-				getPlayerName(game->players[game->rounds[i].player-1]),
-				game->players[game->rounds[i].player-1],
+				getPlayerName(game->players[game->rounds[i].player - 1]),
+				game->players[game->rounds[i].player - 1],
 				longestP1,
 				game->rounds[i].p1_us,
 				longestP2,
 				game->rounds[i].p2_us
 			);
-			if(game->rounds[i].p1_us == UINT32_MAX ||
-			   game->rounds[i].p2_us == UINT32_MAX) {
+			if (game->rounds[i].p1_us == UINT32_MAX ||
+				game->rounds[i].p2_us == UINT32_MAX) {
 				n += snprintf(
 					write_buffer + n,
 					write_buffer_len - n,
 					" (False start)\n"
 				);
 			} else if (game->rounds[i].p1_us == 0 &&
-				game->rounds[i].p2_us == 0) {
+					   game->rounds[i].p2_us == 0) {
 				n += snprintf(
 					write_buffer + n,
 					write_buffer_len - n,
@@ -134,10 +130,15 @@ cat_command(char *write_buffer, size_t write_buffer_len, const char *command) {
 					" (Draw)\n"
 				);
 			} else {
-				uint32_t p1 = game->rounds[i].p1_us==0 ? UINT32_MAX : game->rounds[i].p1_us;
-				uint32_t p2 = game->rounds[i].p2_us==0 ? UINT32_MAX : game->rounds[i].p2_us;
+				uint32_t p1 = game->rounds[i].p1_us == 0
+								  ? UINT32_MAX
+								  : game->rounds[i].p1_us;
+				uint32_t p2 = game->rounds[i].p2_us == 0
+								  ? UINT32_MAX
+								  : game->rounds[i].p2_us;
 				if (p1 < p2) { // Player 1 was faster
-					if (game->rounds[i].player == 1) { // Player 1 should've been faster
+					if (game->rounds[i].player ==
+						1) { // Player 1 should've been faster
 						n += snprintf(
 							write_buffer + n,
 							write_buffer_len - n,
@@ -151,7 +152,8 @@ cat_command(char *write_buffer, size_t write_buffer_len, const char *command) {
 						);
 					}
 				} else if (p2 < p1) { // Player 2 was faster
-					if (game->rounds[i].player == 1) { // Player 1 should've been faster
+					if (game->rounds[i].player ==
+						1) { // Player 1 should've been faster
 						n += snprintf(
 							write_buffer + n,
 							write_buffer_len - n,

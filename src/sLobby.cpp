@@ -1,13 +1,13 @@
 #include <hardware/gpio.h>
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
 
 #include <FreeRTOS.h>
-#include <task.h>
 #include <queue.h>
+#include <task.h>
 
-#include "pindefs.h"
 #include "Context.h"
+#include "pindefs.h"
 
 #include "states.h"
 
@@ -27,7 +27,9 @@ void updateLobbyLCD() {
 	if (ctx.nvmem.games[ctx.nvmem.currentGame].players[0] == 0) {
 		ctx.lcd.print("Player 1");
 	} else {
-		ctx.lcd.print(getPlayerName(ctx.nvmem.games[ctx.nvmem.currentGame].players[0]));
+		ctx.lcd.print(
+			getPlayerName(ctx.nvmem.games[ctx.nvmem.currentGame].players[0])
+		);
 	}
 	if (ctx.redButton.isPressed()) {
 		ctx.lcd.print("_");
@@ -40,7 +42,9 @@ void updateLobbyLCD() {
 	if (ctx.nvmem.games[ctx.nvmem.currentGame].players[1] == 0) {
 		ctx.lcd.print("Player 2");
 	} else {
-		ctx.lcd.print(getPlayerName(ctx.nvmem.games[ctx.nvmem.currentGame].players[1]));
+		ctx.lcd.print(
+			getPlayerName(ctx.nvmem.games[ctx.nvmem.currentGame].players[1])
+		);
 	}
 	if (ctx.yellowButton.isPressed()) {
 		ctx.lcd.print("_");
@@ -78,12 +82,12 @@ void onCardScanned(uint32_t uid) {
 
 #define START_GAME_TIME 1000
 void sLobby(void *pvParameters) {
-	while(xSemaphoreTake(ctx.taskMutex, portMAX_DELAY) != pdTRUE) {
+	while (xSemaphoreTake(ctx.taskMutex, portMAX_DELAY) != pdTRUE) {
 		printf("[sLobby] Waiting for task mutex\n");
 		vTaskDelay(10 / portTICK_PERIOD_MS);
 	}
 	printf("[sLobby] Took task mutex\n");
-	while(ctx.resetButton.isPressed()) {
+	while (ctx.resetButton.isPressed()) {
 		printf("[sLobby] Waiting for reset button to be released\n");
 		vTaskDelay(10 / portTICK_PERIOD_MS);
 	}
@@ -91,13 +95,19 @@ void sLobby(void *pvParameters) {
 	ctx.redButton.setOnPressed(btnPressed);
 	ctx.yellowButton.setOnPressed(btnPressed);
 
-	ctx.redButton.setOnChanged([](WbudyBUTTON* btn, bool state) { updateLobbyLCD(); });
-	ctx.yellowButton.setOnChanged([](WbudyBUTTON* btn, bool state) { updateLobbyLCD(); });
-	
+	ctx.redButton.setOnChanged([](WbudyBUTTON *btn, bool state) {
+		updateLobbyLCD();
+	});
+	ctx.yellowButton.setOnChanged([](WbudyBUTTON *btn, bool state) {
+		updateLobbyLCD();
+	});
+
 	ctx.resetButton.setOnLongPressed(goToGame);
 
-	ctx.nvmem.games[ctx.nvmem.currentGame].players[0] = ctx.nvmem.players[0].uid;
-	ctx.nvmem.games[ctx.nvmem.currentGame].players[1] = ctx.nvmem.players[1].uid;
+	ctx.nvmem.games[ctx.nvmem.currentGame].players[0] =
+		ctx.nvmem.players[0].uid;
+	ctx.nvmem.games[ctx.nvmem.currentGame].players[1] =
+		ctx.nvmem.players[1].uid;
 	updateLobbyLCD();
 	while (1) {
 		if (ctx.resetButton.isPressed()) {
@@ -107,16 +117,14 @@ void sLobby(void *pvParameters) {
 			static const float k = 4.0;
 			float val = 255.0 * (exp(k * x) - 1.0) / (exp(k) - 1.0);
 
-			ctx.rgb.setRGB((uint8_t)val,0,0);
+			ctx.rgb.setRGB((uint8_t)val, 0, 0);
 		} else {
 			if (ctx.redButton.isPressed() || ctx.yellowButton.isPressed()) {
 				ctx.rfid.setOnScanned(onCardScanned);
 				ctx.rgb.setHSL(
-					UIDtoHUE(
-						ctx.nvmem.games[ctx.nvmem.currentGame]
-							.players[ctx.yellowButton.isPressed()]
-					), 
-					255, 
+					UIDtoHUE(ctx.nvmem.games[ctx.nvmem.currentGame]
+								 .players[ctx.yellowButton.isPressed()]),
+					255,
 					FotoToL(ctx.fotoValue)
 				);
 			} else {

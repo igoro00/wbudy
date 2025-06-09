@@ -101,14 +101,14 @@
 // };
 
 enum class SoundEffect {
-    STOP,
-    // SETUP_DONE,
-    MARIO_THEME,
-    PORTAL2,
-    OK,
-    PRESS,
-    LOST,
-    WIN
+	STOP,
+	// SETUP_DONE,
+	MARIO_THEME,
+	PORTAL2,
+	OK,
+	PRESS,
+	LOST,
+	WIN
 };
 
 extern QueueHandle_t soundQueue;

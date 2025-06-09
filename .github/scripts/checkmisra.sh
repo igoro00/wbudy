@@ -25,6 +25,7 @@ function check {
         --std=c++17 \
         --force \
         --inline-suppr \
+        --check-level=exhaustive \
         --xml \
         -D PICO_CONFIG_RTOS_ADAPTER_HEADER="$cwd/lib/FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2040/include/freertos_sdk_config.h" \
         -U __CYGWIN__ \
@@ -37,7 +38,9 @@ function check {
         -U CYW43_NETUTILS -U LWIP_PERF -U MEMP_USE_CUSTOM_POOLS -U MEMP_USE_CUSTOM_POOLS -U PACK_STRUCT_USE_INCLUDES \
         -U __CUSTOM_FILE_IO__ -U PICO_CYW43_ARCH_HEADER\
         --suppress=*:lib/FreeRTOS-Kernel:* \
-        --suppress=*:misra:* \
+        --suppress=*:misra/* \
+        --suppress=cstyleCast:* \
+        --suppress=unusedFunction:* \
         -v \
         2> build/cppcheck-result.xml
 }
