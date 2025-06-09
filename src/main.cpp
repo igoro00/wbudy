@@ -63,16 +63,6 @@ void setupPins(){
 	register_cli_commands();
 }
 
-void main_task(__unused void *params) {
-    if (cyw43_arch_init()) {
-        printf("[WiFi] cyw43_arch_init failed\n");
-        return;
-    }
-	while(1){
-		vTaskDelay(1000/portTICK_PERIOD_MS);
-	}
-}
-
 void tFoto(void *pvParameters) {
 	while (1) {
 		ctx.fotoValue = adc_read();
@@ -134,15 +124,6 @@ int main() {
 	TaskHandle_t task;
 
 	xTaskCreate(
-		main_task,
-		"TestMainThread",
-		configMINIMAL_STACK_SIZE * 4,
-		NULL,
-		tskIDLE_PRIORITY,
-		&task
-	);
-
-	xTaskCreate(
 		vCommandConsoleTask, 
 		"CLI", 
 		1024, 
@@ -159,7 +140,6 @@ int main() {
 		tskIDLE_PRIORITY, 
 		NULL
 	);
-
 
 	xTaskCreate(
 		tLoop,

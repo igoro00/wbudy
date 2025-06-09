@@ -65,6 +65,17 @@ void goToGame(WbudyBUTTON *btn) {
 	printf("[sLobby] Gave task mutex\n");
 }
 
+void onCardScanned(uint32_t uid) {
+	if (ctx.redButton.isPressed()) {
+		ctx.nvmem.games[ctx.nvmem.currentGame].players[0] = uid;
+	}
+	if (ctx.yellowButton.isPressed()) {
+		ctx.nvmem.games[ctx.nvmem.currentGame].players[1] = uid;
+	}
+	updateLobbyLCD();
+	playSound(SoundEffect::OK);
+}
+
 #define START_GAME_TIME 1000
 void sLobby(void *pvParameters) {
 	while(xSemaphoreTake(ctx.taskMutex, portMAX_DELAY) != pdTRUE) {
@@ -98,83 +109,22 @@ void sLobby(void *pvParameters) {
 
 			ctx.rgb.setRGB((uint8_t)val,0,0);
 		} else {
-			if (ctx.redButton.isPressed()) {
+			if (ctx.redButton.isPressed() || ctx.yellowButton.isPressed()) {
+				ctx.rfid.setOnScanned(onCardScanned);
 				ctx.rgb.setHSL(
-					UIDtoHUE(ctx.nvmem.games[ctx.nvmem.currentGame].players[0]),
-					255, FotoToL(ctx.fotoValue)
-				);
-			} else if (ctx.yellowButton.isPressed()) {
-				ctx.rgb.setHSL(
-					UIDtoHUE(ctx.nvmem.games[ctx.nvmem.currentGame].players[1]),
-					255, FotoToL(ctx.fotoValue)
+					UIDtoHUE(
+						ctx.nvmem.games[ctx.nvmem.currentGame]
+							.players[ctx.yellowButton.isPressed()]
+					), 
+					255, 
+					FotoToL(ctx.fotoValue)
 				);
 			} else {
+				ctx.rfid.setOnScanned(NULL);
 				ctx.rgb.setRGB(0, 0, 0);
 			}
 		}
 
-	// 	if (rfidOn && !rfidShouldBe) {
-	// 		rfidOn = false;
-	// 		ctx.rfid->PCD_SoftPowerDown();
-	// 	} else if (!rfidOn && rfidShouldBe) {
-	// 		rfidOn = true;
-	// 		ctx.rfid->PCD_Init();
-	// 	}
-	// 	digitalWrite(LED_BUILTIN, rfidOn);
-
-	// 	rfidShouldBe = false;
-
-	// 	if (rstBtn && ctx.game->getPlayer(0).uid && ctx.game->getPlayer(1).uid &&
-	// 		!redBtn && !yellowBtn) {
-	// 		if (lastRST == 0) {
-	// 			lastRST = millis();
-	// 		} else if (millis() - lastRST > START_GAME_TIME) {
-	// 			ctx.gameState = GameState::GAME;
-	// 			setLED(0, 0, 0);
-	// 			for (int i = 0; i < 5; i++) {
-	// 				setLED(255, 0, 0);
-	// 				delay(50);
-	// 				setLED(0, 0, 0);
-	// 				delay(50);
-	// 			}
-	// 			break;
-	// 		} else {
-	// 			byte r = pow(map(millis() - lastRST, 0, START_GAME_TIME, 0, 63), 3)/1024;
-	// 			setLED(r, 0, 0);
-	// 		}
-	// 	} else {
-	// 		if (lastRST) {
-	// 			lastRST = 0;
-	// 			setLED(0, 0, 0);
-	// 		}
-	// 	}
-
-	// 	if (yellowBtn && redBtn) {
-	// 		// Serial.println("Both buttons pressed");
-	// 		// not allowed
-	// 		continue;
-	// 	}
-
-	// 	// cancel RFID task if both buttons are not pressed
-	// 	if (!yellowBtn && !redBtn) {
-	// 		if (!rstBtn) {
-	// 			setLED(0, 0, 0);
-	// 		}
-	// 		continue;
-	// 	}
-
-	// 	// At this point exactly one button is pressed
-
-	// 	rfidShouldBe = true;
-	// 	if(rfidOn) {
-	// 		uint32_t uid = tRfidRead();
-	// 		if (uid) {
-	// 			setLEDByUID(uid);
-	// 			ctx.game->setPlayer(yellowBtn, uid);
-	// 			updateLCD = true;
-	// 			wait(100);
-	// 		}
-	// 	}
-		vTaskDelay(100 / portTICK_PERIOD_MS); // should be replace by a semaphore or something
+		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }
