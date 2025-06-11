@@ -28,35 +28,6 @@ uint32_t micros32(void) {
 	return time_us_32(); // Calls the SDK's static inline function
 }
 
-void setupPins() {
-	ctx.rgb.init(LED_R, LED_G, LED_B, true);
-	ctx.lcd.init(i2c0, 0x27, LCD_SDA, LCD_SCL);
-	ctx.redButton.init(RED_BTN, false, 50);
-	ctx.yellowButton.init(YELLOW_BTN, false, 50);
-	ctx.resetButton.init(GAME_RST_BTN, false, 50);
-	initSound();
-	adc_init();
-	adc_gpio_init(FOTORESISTOR);
-	adc_select_input(0);
-	ctx.fotoValue = adc_read();
-
-	ctx.rfid.init(
-		spi0,
-		RFID_CS,
-		RFID_RST,
-		RFID_IRQ,
-		RFID_MISO,
-		RFID_SCK,
-		RFID_MOSI
-	);
-
-	ctx.gameState = GameState::MAIN;
-	ctx.taskMutex = xSemaphoreCreateBinary();
-	xSemaphoreGive(ctx.taskMutex);
-	soundQueue = xQueueCreate(8, sizeof(SoundEffect));
-	register_cli_commands();
-}
-
 void tFoto(void *pvParameters) {
 	while (1) {
 		ctx.fotoValue = adc_read();
@@ -111,11 +82,33 @@ void tLoop(void *pvParameters) {
 	}
 }
 
-int main() {
-	stdio_init_all();
-	setupPins();
 
-	TaskHandle_t task;
+void setupPins(void *pvParameters) {
+	ctx.rgb.init(LED_R, LED_G, LED_B, true);
+	ctx.lcd.init(i2c0, 0x27, LCD_SDA, LCD_SCL);
+	ctx.redButton.init(RED_BTN, false, 50);
+	ctx.yellowButton.init(YELLOW_BTN, false, 50);
+	ctx.resetButton.init(GAME_RST_BTN, false, 50);
+	initSound();
+	adc_init();
+	adc_gpio_init(FOTORESISTOR);
+	adc_select_input(0);
+	ctx.fotoValue = adc_read();
+	ctx.rfid.init(
+		spi0,
+		RFID_CS,
+		RFID_RST,
+		RFID_IRQ,
+		RFID_MISO,
+		RFID_SCK,
+		RFID_MOSI
+	);
+
+	ctx.gameState = GameState::MAIN;
+	ctx.taskMutex = xSemaphoreCreateBinary();
+	xSemaphoreGive(ctx.taskMutex);
+	soundQueue = xQueueCreate(8, sizeof(SoundEffect));
+	register_cli_commands();
 
 	xTaskCreate(
 		vCommandConsoleTask,
@@ -136,6 +129,26 @@ int main() {
 	);
 
 	xTaskCreate(tLoop, "tLoop", 8192, NULL, tskIDLE_PRIORITY + 1, NULL);
+
+	while(1){
+		vTaskDelay(1000 / portTICK_PERIOD_MS);
+	}
+}
+
+int main() {
+	stdio_init_all();
+	while (!stdio_usb_connected()) {
+		sleep_ms(100);
+	}
+	
+	xTaskCreate(
+		setupPins,
+		"setupPins",
+		configMINIMAL_STACK_SIZE * 2,
+		NULL,
+		tskIDLE_PRIORITY + 1,
+		NULL
+	);
 
 	vTaskStartScheduler();
 

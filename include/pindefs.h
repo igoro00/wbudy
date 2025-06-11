@@ -1,8 +1,8 @@
 #pragma once
 
 #define YELLOW_BTN 17
-#define RED_BTN 16
-#define GAME_RST_BTN 21
+#define RED_BTN 21
+#define GAME_RST_BTN 16
 #define LED_R 20
 #define LED_G 18
 #define LED_B 19

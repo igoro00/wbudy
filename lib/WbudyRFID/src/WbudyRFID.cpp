@@ -40,23 +40,6 @@ bool WbudyRFID::init(
 	this->_callback = nullptr;
 	_instance = this;
 
-	// Inicjalizacja mutexa
-	this->taskIrqMutex = xSemaphoreCreateBinary();
-	xSemaphoreGive(this->taskIrqMutex);
-
-	// Inicjalizacja mutexa - początkowo zablokowany (brak callbacka)
-	this->callbackActiveMutex = xSemaphoreCreateBinary();
-	// Nie oddajemy semafora - tPing będzie zablokowany dopóki nie zostanie
-	// podpięty callback
-
-	// Konfiguracja przerwania
-	gpio_set_irq_enabled_with_callback(
-		_irq_pin,
-		GPIO_IRQ_EDGE_FALL,
-		true,
-		&WbudyRFID::irqHandler
-	);
-
 	// Inicjalizacja SPI
 	spi_init(_spi, 1000000);
 	spi_set_format(_spi, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
@@ -73,15 +56,10 @@ bool WbudyRFID::init(
 	gpio_set_dir(_reset_pin, GPIO_OUT);
 	gpio_put(_reset_pin, 1);
 
-	gpio_init(_irq_pin);
-	gpio_set_dir(_irq_pin, GPIO_IN);
-	gpio_pull_up(_irq_pin);
-
 	reset();
 	writeRegister(TxASKReg, 0x40);
 	writeRegister(ModeReg, 0x3D);
 	antennaOn();
-
 	// Włączenie przerwań dla RxIRq i IdleIRq
 	writeRegister(ComIEnReg, 0xA0); // IRqInv (0x80) + RxIEn (0x20) = 0xA0
 
@@ -90,8 +68,6 @@ bool WbudyRFID::init(
 	writeRegister(DivIrqReg, 0x7F);
 
 	uint8_t version = readRegister(0x37);
-
-	xTaskCreate(tPing, "tPing", 2048, this, tskIDLE_PRIORITY + 1, NULL);
 
 	xTaskCreate(tReadCard, "tReadCard", 2048, this, tskIDLE_PRIORITY + 3, NULL);
 
@@ -126,33 +102,11 @@ uint32_t WbudyRFID::getUUID() {
 
 void WbudyRFID::setOnScanned(CardCallback cb) {
 	_callback = cb;
-	if (cb != nullptr) {
-		// Callback jest ustawiony - odblokuj tPing
-		xSemaphoreGive(callbackActiveMutex);
-	} else {
-		// Jeśli callback jest nullptr, to nie blokujemy tPing
-		xSemaphoreTake(
-			callbackActiveMutex,
-			0
-		); // Nie czekaj, jeśli semafor już jest zabrany
-	}
-}
-
-void WbudyRFID::irqHandler(uint gpio, uint32_t events) {
-	if (_instance && gpio == _instance->_irq_pin &&
-		(events & GPIO_IRQ_EDGE_FALL)) {
-		BaseType_t xHigherPriorityTaskWoken = pdTRUE;
-		// BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-		xSemaphoreGiveFromISR(
-			_instance->taskIrqMutex,
-			&xHigherPriorityTaskWoken
-		);
-	}
 }
 
 uint8_t WbudyRFID::readRegister(uint8_t reg) {
 	uint8_t value;
-	gpio_put(_cs_pin, 0);
+	gpio_put(_cs_pin, 0);		
 	uint8_t address = ((reg << 1) & 0x7E) | 0x80;
 	spi_write_blocking(_spi, &address, 1);
 	spi_read_blocking(_spi, 0x00, &value, 1);
@@ -242,44 +196,19 @@ bool WbudyRFID::readCardSerial() {
 	return (bcc == calculated_bcc);
 }
 
-void WbudyRFID::tPing(void *pvParameters) {
-	WbudyRFID *self = static_cast<WbudyRFID *>(pvParameters);
-
-	while (1) {
-		// Czeka na semafor - blokuj jeśli nie ma callbacka
-		if (xSemaphoreTake(self->callbackActiveMutex, portMAX_DELAY) ==
-			pdTRUE) {
-			// Sprawdź czy callback nadal istnieje
-			if (self->_callback == nullptr) {
-				// Callback został odłączony, wróć do czekania na semafor
-				continue;
-			}
-			self->startCardDetection();
-			// Oddanie semafora z powrotem - pozwól na kolejne pingowanie
-			xSemaphoreGive(self->callbackActiveMutex);
-			vTaskDelay(100 / portTICK_PERIOD_MS);
-		}
-	}
-}
-
 void WbudyRFID::tReadCard(void *pvParameters) {
 	WbudyRFID *self = static_cast<WbudyRFID *>(pvParameters);
 	while (1) {
-		if (xSemaphoreTake(self->taskIrqMutex, portMAX_DELAY) == pdTRUE) {
-			uint8_t irqFlags = self->readRegister(ComIrqReg);
+		if (self->_callback != NULL) {
+			printf("[WbudyRFID] IRQ triggered\n");
+			uint8_t fifoLevel = self->readRegister(FIFOLevelReg);
 
-			if (irqFlags & 0x20) { // RxIRq - odebrano dane
-				uint8_t fifoLevel = self->readRegister(FIFOLevelReg);
-
-				if (fifoLevel > 0 && self->_callback) {
-					uint32_t uuid = self->getUUID();
-					if (self->_callback != NULL) {
-						self->_callback(uuid);
-					}
-				}
+			if (fifoLevel > 0) {
+				uint32_t uuid = self->getUUID();
+				printf("[WbudyRFID] Card detected with UUID: %08X\n", uuid);
+				self->_callback(uuid);
 			}
-			// Wyczyść flagi przerwań
-			self->writeRegister(ComIrqReg, 0x7F);
 		}
+		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }
