@@ -84,7 +84,7 @@ void tLoop(void *pvParameters) {
 
 
 void setupPins(void *pvParameters) {
-	ctx.rgb.init(LED_R, LED_G, LED_B, true);
+	ctx.rgb.init(LED_R, LED_G, LED_B, false);
 	ctx.lcd.init(i2c0, 0x27, LCD_SDA, LCD_SCL);
 	ctx.redButton.init(RED_BTN, false, 50);
 	ctx.yellowButton.init(YELLOW_BTN, false, 50);
@@ -137,9 +137,24 @@ void setupPins(void *pvParameters) {
 
 int main() {
 	stdio_init_all();
-	while (!stdio_usb_connected()) {
-		sleep_ms(100);
-	}
+	// while (!stdio_usb_connected()) {
+		// sleep_ms(100);
+	// }
+	// ctx.rfid.init(
+	// 	spi0,
+	// 	RFID_CS,
+	// 	RFID_RST,
+	// 	RFID_IRQ,
+	// 	RFID_MISO,
+	// 	RFID_SCK,
+	// 	RFID_MOSI
+	// );
+	// while(1){
+	// 	uint32_t uid = ctx.rfid.getUUID();
+	// 	if (uid){
+	// 		printf("kurwa %08x", uid);
+	// 	}
+	// }
 	
 	xTaskCreate(
 		setupPins,

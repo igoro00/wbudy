@@ -106,7 +106,7 @@ const char *getPlayerName(uint32_t uid) {
 			return ctx.nvmem.players[i].name;
 		}
 	}
-	return "Unknown";
+	return 0;
 }
 
 // templated map

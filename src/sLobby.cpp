@@ -27,9 +27,14 @@ void updateLobbyLCD() {
 	if (ctx.nvmem.games[ctx.nvmem.currentGame].players[0] == 0) {
 		ctx.lcd.print("Player 1");
 	} else {
-		ctx.lcd.print(
-			getPlayerName(ctx.nvmem.games[ctx.nvmem.currentGame].players[0])
-		);
+		const char *playerName =
+			getPlayerName(ctx.nvmem.games[ctx.nvmem.currentGame].players[0]);
+		if (playerName == NULL) {
+			ctx.lcd.printf("0x%08X",
+				ctx.nvmem.games[ctx.nvmem.currentGame].players[0]);
+		} else {
+			ctx.lcd.print(playerName);
+		}
 	}
 	if (ctx.redButton.isPressed()) {
 		ctx.lcd.print("_");
@@ -42,9 +47,14 @@ void updateLobbyLCD() {
 	if (ctx.nvmem.games[ctx.nvmem.currentGame].players[1] == 0) {
 		ctx.lcd.print("Player 2");
 	} else {
-		ctx.lcd.print(
-			getPlayerName(ctx.nvmem.games[ctx.nvmem.currentGame].players[1])
-		);
+		const char *playerName =
+			getPlayerName(ctx.nvmem.games[ctx.nvmem.currentGame].players[1]);
+		if (playerName == NULL) {
+			ctx.lcd.printf("0x%08X",
+				ctx.nvmem.games[ctx.nvmem.currentGame].players[1]);
+		} else {
+			ctx.lcd.print(playerName);
+		}
 	}
 	if (ctx.yellowButton.isPressed()) {
 		ctx.lcd.print("_");
@@ -104,10 +114,6 @@ void sLobby(void *pvParameters) {
 
 	ctx.resetButton.setOnLongPressed(goToGame);
 
-	ctx.nvmem.games[ctx.nvmem.currentGame].players[0] =
-		ctx.nvmem.players[0].uid;
-	ctx.nvmem.games[ctx.nvmem.currentGame].players[1] =
-		ctx.nvmem.players[1].uid;
 	updateLobbyLCD();
 	while (1) {
 		if (ctx.resetButton.isPressed()) {
