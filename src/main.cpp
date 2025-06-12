@@ -145,9 +145,14 @@ int main() {
 	gpio_pull_up(LCD_SDA);
 	gpio_pull_up(LCD_SCL);
 
+	i2c_hw_t *hw = _i2c->hw;
+
+	// Wyłącz I2C przed konfiguracją
+	hw->enable = 1;
+
 	while (1) {
 		printf("Skanowanie I2C...\n");
-		i2c_hw_t *hw = i2c0->hw;
+		// i2c_hw_t *hw = i2c0->hw;
 		for (uint8_t addr = 0x03; addr < 0x78; addr++) {
 			hw->tar = addr;
 			hw->data_cmd = 0xFF;
