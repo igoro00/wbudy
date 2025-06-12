@@ -37,7 +37,7 @@ void setSpeakerFreq(uint16_t freq) {
 	pwm_set_chan_level(
 		pwm_gpio_to_slice_num(SPEAKER),
 		pwm_gpio_to_channel(SPEAKER),
-		1000000 / freq / 2
+		1000000 / freq / 4
 	);
 }
 
@@ -192,6 +192,7 @@ void tPlay_Win(void *pvParameters) {
 }
 
 void playSound(SoundEffect s) {
+	return;
 	printf("[Sound] Playing sound effect: %d\n", (int)s);
 	if (tPlayer != NULL) {
 		printf("[Sound] tPlayer is not null\n");

@@ -2,6 +2,7 @@
 #include <task.h>
 
 #include <hardware/adc.h>
+#include <hardware/pwm.h>
 #include <hardware/i2c.h>
 #include <hardware/spi.h>
 #include <hardware/timer.h>
@@ -137,25 +138,25 @@ void setupPins(void *pvParameters) {
 }
 
 int main() {
+	uint32_t slice_num = 1;
+	uint16_t wrap = 300;
 	stdio_init_all();
-	// while (!stdio_usb_connected()) {
-		// sleep_ms(100);
-	// }
-	// ctx.rfid.init(
-	// 	spi0,
-	// 	RFID_CS,
-	// 	RFID_RST,
-	// 	RFID_IRQ,
-	// 	RFID_MISO,
-	// 	RFID_SCK,
-	// 	RFID_MOSI
-	// );
-	// while(1){
-	// 	uint32_t uid = ctx.rfid.getUUID();
-	// 	if (uid){
-	// 		printf("kurwa %08x", uid);
-	// 	}
-	// }
+	gpio_set_function(2, GPIO_FUNC_PWM);
+	gpio_set_function(3, GPIO_FUNC_PWM);
+	pwm_set_wrap(slice_num, wrap);
+	pwm_set_clkdiv(slice_num, (float)125000000 / (6666 * (wrap)));
+	// pwm_set_clkdiv(slice_num, 62.5);
+	pwm_set_phase_correct(slice_num, false);
+	pwm_hw->slice[slice_num].csr |= 1 << 3; //INVERT B channel
+	pwm_set_chan_level(slice_num, 0, 200);
+	pwm_set_chan_level(slice_num, 1, 200);
+
+
+	pwm_set_enabled(slice_num, true);
+
+	while(1){}
+
+	return 0;
 	
 	xTaskCreate(
 		setupPins,
