@@ -9,6 +9,9 @@
 #include <pico/cyw43_arch.h>
 #include <pico/multicore.h>
 #include <pico/stdlib.h>
+#include "pico/stdlib.h"
+#include "hardware/clocks.h"
+#include "hardware/pll.h"
 
 #include <lwip/apps/httpd.h>
 #include <lwip/apps/mdns.h>
@@ -138,18 +141,24 @@ void setupPins(void *pvParameters) {
 }
 
 int main() {
+	// Disable interrupts before changing clocks
+	uint32_t ints = save_and_disable_interrupts();
+	// Set system clock to 90 MHz using PLL_SYS
+	set_sys_clock_pll(360000000, 4, 1);  // 360 / 4 = 90 MHz
+	restore_interrupts(ints);
+
 	uint32_t slice_num = 1;
-	uint16_t wrap = 300;
+	float wrap = 180;
 	stdio_init_all();
 	gpio_set_function(2, GPIO_FUNC_PWM);
 	gpio_set_function(3, GPIO_FUNC_PWM);
 	pwm_set_wrap(slice_num, wrap);
-	pwm_set_clkdiv(slice_num, (float)125000000 / (6666 * (wrap)));
-	// pwm_set_clkdiv(slice_num, 62.5);
+
+	pwm_set_clkdiv(slice_num, (float)90000000/(6666*90));
 	pwm_set_phase_correct(slice_num, false);
 	pwm_hw->slice[slice_num].csr |= 1 << 3; //INVERT B channel
-	pwm_set_chan_level(slice_num, 0, 200);
-	pwm_set_chan_level(slice_num, 1, 200);
+	pwm_set_chan_level(slice_num, 0, 120);
+	pwm_set_chan_level(slice_num, 1, 120);
 
 
 	pwm_set_enabled(slice_num, true);
