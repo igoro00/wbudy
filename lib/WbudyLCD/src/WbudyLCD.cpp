@@ -34,7 +34,22 @@ void WbudyLCD::init(
 	set_pin_pullup(_sda);
 	set_pin_pullup(_scl);
 
-	i2c_hw_t *hw = _i2c->hw;
+	//--- SKANOWANIE I2C PRZED INICJALIZACJĄ LCD ---
+    i2c_hw_t *hw = _i2c->hw;
+    printf("Skanowanie I2C...\n");
+    for (uint8_t addr = 0x03; addr < 0x78; addr++) {
+        hw->tar = addr;
+        hw->data_cmd = 0x00;
+        while (!(hw->raw_intr_stat & (1 << 4))) {
+            tight_loop_contents();
+        }
+        bool nack = hw->tx_abrt_source != 0;
+        hw->clr_tx_abrt;
+        if (!nack) {
+            printf(" Urządzenie na 0x%02X\n", addr);
+        }
+        sleep_ms_custom(20);
+	}
 
 	// Wyłącz I2C przed konfiguracją
 	hw->enable = 0;

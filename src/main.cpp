@@ -138,6 +138,7 @@ void setupPins(void *pvParameters) {
 
 int main() {
 	stdio_init_all();
+	sleep_ms(2000);
 	// while (!stdio_usb_connected()) {
 		// sleep_ms(100);
 	// }
