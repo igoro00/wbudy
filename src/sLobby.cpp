@@ -133,7 +133,7 @@ void sLobby(void *pvParameters) {
 					.players[ctx.yellowButton.isPressed()];
 				if(uid){
 					ctx.rgb.setHSL(
-						UIDtoHUE(uid),
+						UIDtoHUE(uidd),
 						255,
 						FotoToL(ctx.fotoValue)
 					);

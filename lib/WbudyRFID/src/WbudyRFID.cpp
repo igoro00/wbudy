@@ -158,7 +158,6 @@ void WbudyRFID::tRFID(void *pvParameters) {
 	while(1){
 		uint32_t uid = rfid->getUUID();
 		if (uid != 0) {
-			printf("[RFID] Card detected with UID: %08X\n", uid);
 			if (rfid->_callback) {
 				rfid->_callback(uid);
 			}
