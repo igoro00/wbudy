@@ -1,86 +1,175 @@
-#include "NonBlockingRtttl.h"
+#include <FreeRTOS.h>
+#include <task.h>
 
-#include "chars.hpp"
-#include "colors.hpp"
-#include "Game.hpp"
-#include "pindefs.hpp"
-#include "filesystem.hpp"
-#include "sound.hpp"
-#include "sysutils.hpp"
-#include "webserver.hpp"
-#include "main.hpp"
+#include <hardware/adc.h>
+#include <hardware/i2c.h>
+#include <hardware/spi.h>
+#include <hardware/timer.h>
+#include <pico/cyw43_arch.h>
+#include <pico/multicore.h>
+#include <pico/stdlib.h>
+
+#include <lwip/apps/httpd.h>
+#include <lwip/apps/mdns.h>
+#include <lwip/init.h>
+#include <lwip/ip4_addr.h>
+
+#include "rtoshooks.h"
+#include "states.h"
+#include "tSound.h"
+
+#include "Context.h"
+#include "pindefs.h"
 
 Context ctx;
+QueueHandle_t soundQueue;
 
-void setup() {
-	ctx.gameState = GameState::END;
-	ctx.cardUID = 0;
-	ctx.game = nullptr;
-	LiquidCrystal_I2C *lcd = new LiquidCrystal_I2C(0x27, 16, 2);
-	ctx.lcd = lcd;
-	MFRC522 *rfid = new MFRC522(RFID_CS, RFID_RST);
-	ctx.rfid = rfid;
-	Serial.begin(115200);
-	SPI.setRX(RFID_MISO);
-	SPI.setTX(RFID_MOSI);
-	SPI.setSCK(RFID_SCK);
-	SPI.setCS(RFID_CS);
-	SPI.begin();
-	Wire.begin();
-	lcd->init();
-	loadChars(lcd);
-	lcd->backlight();
-	
-	rfid->PCD_Init();
-	// rfid->PCD_WriteRegister(rfid->ComIEnReg, 0xA0);
-	rfid->PCD_SoftPowerDown();
+uint32_t micros32(void) {
+	return time_us_32(); // Calls the SDK's static inline function
+}
 
-	// pinMode(LED_BUILTIN, OUTPUT);
-	pinMode(LED_R, OUTPUT);
-	pinMode(LED_G, OUTPUT);
-	pinMode(LED_B, OUTPUT);
+void tFoto(void *pvParameters) {
+	while (1) {
+		ctx.fotoValue = adc_read();
+		vTaskDelay(100 / portTICK_PERIOD_MS);
+	}
+}
 
-	// digitalWrite(LED_BUILTIN, 1);
-	analogWrite(LED_R, 255);
-	analogWrite(LED_G, 255);
-	analogWrite(LED_B, 255);
-
-	pinMode(YELLOW_BTN, INPUT_PULLUP);
-	pinMode(RED_BTN, INPUT_PULLUP);
-	pinMode(GAME_RST_BTN, INPUT_PULLUP);
-	pinMode(SPEAKER, OUTPUT);
-
-	initFS();
-	initWebserver();
-
-	PlaySound(SoundEffect::SETUP_DONE);
-	waitForSoundEffect();
-	delay(1000);
+void tLoop(void *pvParameters) {
+	while (1) {
+		printf("[Supervisor] trying to get mutex\n");
+		if (xSemaphoreTake(ctx.taskMutex, portMAX_DELAY) == pdTRUE) {
+			printf("[Supervisor] took mutex\n");
+			if (ctx.currentTask) {
+				vTaskDelete(ctx.currentTask);
+			}
+			ctx.currentTask = NULL;
+			switch (ctx.gameState) {
+			case GameState::END:
+			case GameState::MAIN:
+				xTaskCreate(
+					sMain,
+					"sMain",
+					configMINIMAL_STACK_SIZE,
+					NULL,
+					tskIDLE_PRIORITY + 1,
+					&ctx.currentTask
+				);
+				break;
+			case GameState::LOBBY:
+				xTaskCreate(
+					sLobby,
+					"sLobby",
+					configMINIMAL_STACK_SIZE * 2,
+					NULL,
+					tskIDLE_PRIORITY + 1,
+					&ctx.currentTask
+				);
+				break;
+			case GameState::GAME:
+				xTaskCreate(
+					sGame,
+					"sGame",
+					configMINIMAL_STACK_SIZE * 2,
+					NULL,
+					tskIDLE_PRIORITY + 8,
+					&ctx.currentTask
+				);
+				break;
+			}
+			xSemaphoreGive(ctx.taskMutex);
+		}
+	}
 }
 
 
-void loop() {
-	if (ctx.gameState == GameState::LOBBY) {
-		tLobby();
-	} else if (ctx.gameState == GameState::GAME) {
-		tGame();
-	} else {
-		bookkeeping();
-		if (rtttl::done()) {
-			PlaySound(SoundEffect::MAIN_THEME);
-		}
-		u_int32_t color = HSL2RGB((millis() / 4) % 256, 0xff, 0x7f);
-		byte r = color >> 16;
-		byte g = color >> 8;
-		byte b = color >> 0;
+void setupPins(void *pvParameters) {
+	ctx.rgb.init(LED_R, LED_G, LED_B, false);
+	ctx.lcd.init(i2c0, 0x27, LCD_SDA, LCD_SCL);
+	ctx.redButton.init(RED_BTN, false, 50);
+	ctx.yellowButton.init(YELLOW_BTN, false, 50);
+	ctx.resetButton.init(GAME_RST_BTN, false, 50);
+	initSound();
+	adc_init();
+	adc_gpio_init(FOTORESISTOR);
+	adc_select_input(0);
+	ctx.fotoValue = adc_read();
+	ctx.rfid.init(
+		spi0,
+		RFID_CS,
+		RFID_RST,
+		RFID_IRQ,
+		RFID_MISO,
+		RFID_SCK,
+		RFID_MOSI
+	);
 
-		setLED(r, g, b);
-		ctx.lcd->setCursor(0, 0);
-		ctx.lcd->print("Game Over");
-		if (!digitalRead(GAME_RST_BTN)){
-			PlaySound(SoundEffect::OK);
-			waitForSoundEffect();
-			ctx.gameState = GameState::LOBBY;
-		}
+	ctx.gameState = GameState::MAIN;
+	ctx.taskMutex = xSemaphoreCreateBinary();
+	xSemaphoreGive(ctx.taskMutex);
+	ctx.lcdMutex = xSemaphoreCreateMutex();
+	soundQueue = xQueueCreate(8, sizeof(SoundEffect));
+	register_cli_commands();
+
+	xTaskCreate(
+		vCommandConsoleTask,
+		"CLI",
+		1024,
+		NULL,
+		tskIDLE_PRIORITY + 1,
+		NULL
+	);
+
+	xTaskCreate(
+		tFoto,
+		"tFoto",
+		configMINIMAL_STACK_SIZE,
+		NULL,
+		tskIDLE_PRIORITY,
+		NULL
+	);
+
+	xTaskCreate(tLoop, "tLoop", 8192, NULL, tskIDLE_PRIORITY + 1, NULL);
+
+	while(1){
+		vTaskDelay(1000 / portTICK_PERIOD_MS);
+	}
+}
+
+int main() {
+	stdio_init_all();
+	// while (!stdio_usb_connected()) {
+		// sleep_ms(100);
+	// }
+	// ctx.rfid.init(
+	// 	spi0,
+	// 	RFID_CS,
+	// 	RFID_RST,
+	// 	RFID_IRQ,
+	// 	RFID_MISO,
+	// 	RFID_SCK,
+	// 	RFID_MOSI
+	// );
+	// while(1){
+	// 	uint32_t uid = ctx.rfid.getUUID();
+	// 	if (uid){
+	// 		printf("kurwa %08x", uid);
+	// 	}
+	// }
+	
+	xTaskCreate(
+		setupPins,
+		"setupPins",
+		configMINIMAL_STACK_SIZE * 2,
+		NULL,
+		tskIDLE_PRIORITY + 1,
+		NULL
+	);
+
+	vTaskStartScheduler();
+
+	while (true) {
+		printf("Exited Scheduler\n");
+		sleep_ms(1000);
 	}
 }
