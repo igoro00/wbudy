@@ -17,6 +17,7 @@
 enum class GameState { MAIN, LOBBY, GAME, END };
 struct Context {
 	SemaphoreHandle_t taskMutex;
+	SemaphoreHandle_t lcdMutex;
 	TaskHandle_t currentTask;
 	GameState gameState;
 

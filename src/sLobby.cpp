@@ -18,6 +18,7 @@
 // 1 - player 1
 // 4 - player 2
 void updateLobbyLCD() {
+	xSemaphoreTake(ctx.lcdMutex, portMAX_DELAY);
 	ctx.lcd.clear();
 
 	ctx.lcd.setCursor(0, 0);
@@ -59,6 +60,7 @@ void updateLobbyLCD() {
 	if (ctx.yellowButton.isPressed()) {
 		ctx.lcd.print("_");
 	}
+	xSemaphoreGive(ctx.lcdMutex);
 }
 
 void btnPressed(WbudyBUTTON *btn) {
@@ -127,12 +129,16 @@ void sLobby(void *pvParameters) {
 		} else {
 			if (ctx.redButton.isPressed() || ctx.yellowButton.isPressed()) {
 				ctx.rfid.setOnScanned(onCardScanned);
-				ctx.rgb.setHSL(
-					UIDtoHUE(ctx.nvmem.games[ctx.nvmem.currentGame]
-								 .players[ctx.yellowButton.isPressed()]),
-					255,
-					FotoToL(ctx.fotoValue)
-				);
+				uint32_t uid = ctx.nvmem.games[ctx.nvmem.currentGame]
+					.players[ctx.yellowButton.isPressed()];
+				if(uid){
+					ctx.rgb.setHSL(
+						UIDtoHUE(uid),
+						255,
+						FotoToL(ctx.fotoValue)
+					);
+				}
+				
 			} else {
 				ctx.rfid.setOnScanned(NULL);
 				ctx.rgb.setRGB(0, 0, 0);

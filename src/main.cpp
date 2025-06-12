@@ -107,6 +107,7 @@ void setupPins(void *pvParameters) {
 	ctx.gameState = GameState::MAIN;
 	ctx.taskMutex = xSemaphoreCreateBinary();
 	xSemaphoreGive(ctx.taskMutex);
+	ctx.lcdMutex = xSemaphoreCreateMutex();
 	soundQueue = xQueueCreate(8, sizeof(SoundEffect));
 	register_cli_commands();
 
