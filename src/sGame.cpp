@@ -123,6 +123,7 @@ void sGame(void *pvParameters) {
 		uint32_t ledStarted = time_us_32();
 		while (time_us_32() - ledStarted < 5'000'000) {
 			if (!pButtons[0] && !pButtons[1]) {
+				vTaskDelay(10/ portTICK_PERIOD_MS);
 				continue;
 			}
 			game.rounds[i].p1_us = pButtons[0] ? pButtons[0] - ledStarted : 0;

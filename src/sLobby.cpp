@@ -118,7 +118,9 @@ void sLobby(void *pvParameters) {
 
 	updateLobbyLCD();
 	while (1) {
-		if (ctx.resetButton.isPressed()) {
+		if (ctx.resetButton.isPressed() &&
+			ctx.nvmem.games[ctx.nvmem.currentGame].players[0] && 
+			ctx.nvmem.games[ctx.nvmem.currentGame].players[1]) {
 
 			// funkcja wykładnicza przechodząca przez (0,0) i (255,255)
 			float x = (float)ctx.resetButton.msSinceChange() / START_GAME_TIME;
@@ -133,7 +135,7 @@ void sLobby(void *pvParameters) {
 					.players[ctx.yellowButton.isPressed()];
 				if(uid){
 					ctx.rgb.setHSL(
-						UIDtoHUE(uidd),
+						UIDtoHUE(uid),
 						255,
 						FotoToL(ctx.fotoValue)
 					);
