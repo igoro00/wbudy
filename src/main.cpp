@@ -138,7 +138,33 @@ void setupPins(void *pvParameters) {
 
 int main() {
 	stdio_init_all();
-	sleep_ms(2000);
+	
+	// Skanowanie I2C w nieskończonej pętli
+    i2c_init(i2c0, 100 * 1000); // upewnij się, że I2C jest zainicjalizowane
+    gpio_set_function(LCD_SDA, GPIO_FUNC_I2C);
+    gpio_set_function(LCD_SCL, GPIO_FUNC_I2C);
+    gpio_pull_up(LCD_SDA);
+    gpio_pull_up(LCD_SCL);
+
+    while (1) {
+        printf("Skanowanie I2C...\n");
+        i2c_hw_t *hw = i2c0->hw;
+        for (uint8_t addr = 0x03; addr < 0x78; addr++) {
+            hw->tar = addr;
+            hw->data_cmd = 0x00;
+            while (!(hw->raw_intr_stat & (1 << 4))) {
+                tight_loop_contents();
+            }
+            bool nack = hw->tx_abrt_source != 0;
+            hw->clr_tx_abrt;
+            if (!nack) {
+                printf(" Urządzenie na 0x%02X\n", addr);
+            }
+            sleep_ms(2);
+        }
+        printf("Skanowanie zakończone.\n\n");
+        sleep_ms(200); // Odczekaj 2 sekundy przed kolejnym skanowaniem
+    }
 	// while (!stdio_usb_connected()) {
 		// sleep_ms(100);
 	// }
